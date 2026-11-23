@@ -1,5 +1,7 @@
 'use client'
 
+import { Filter, Loader2, Lock, Rows3, Sparkles } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { ExpressionEditor } from '@/components/app/expression-editor'
 import { Button } from '@/components/ui/button'
@@ -13,16 +15,14 @@ import {
 } from '@/components/ui/dialog'
 import {
   type AdminUser,
+  api,
   type EffectiveRows,
   type Field,
   type RowAccess,
-  api,
 } from '@/lib/api/client'
 import { $t, $tp, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Filter, Loader2, Lock, Rows3, Sparkles } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * Below the grid, beside the fields — the rows of one table, group by group (05 §16).

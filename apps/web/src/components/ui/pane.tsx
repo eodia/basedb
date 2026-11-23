@@ -1,10 +1,10 @@
 'use client'
 
+import { type KeyboardEvent, type PointerEvent, type ReactNode, useRef, useState } from 'react'
 import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { clampSize, usePaneSize } from '@/lib/panes'
 import { cn } from '@/lib/utils'
-import { type KeyboardEvent, type PointerEvent, type ReactNode, useRef, useState } from 'react'
 
 type Side = 'left' | 'right' | 'top'
 

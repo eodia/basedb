@@ -1,9 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { type StructureEvent, api } from '@/lib/api/client'
-import { $t, intlLocale } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
 import {
   ArrowRight,
   Database,
@@ -16,6 +12,10 @@ import {
   TextCursorInput,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { api, type StructureEvent } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
 
 /**
  * The structure history of a base — chapter 07 §8.1, on screen.

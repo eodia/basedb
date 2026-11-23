@@ -1,23 +1,5 @@
 'use client'
 
-import { Choice as ChoiceField } from '@/components/ui/choice'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Hint } from '@/components/ui/tooltip'
-import { chartModel, pieSlices } from '@/lib/analytics/charts'
-import {
-  type FormatContext,
-  SERIES_DARK,
-  SERIES_LIGHT,
-  inkOf,
-  valueText,
-} from '@/lib/analytics/format'
-import { VIZ_LABELS, vizFits } from '@/lib/analytics/model'
-import type { DescribedBase } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import { useMembers } from '@/lib/members'
-import { useTheme } from '@/lib/theme'
-import { cn } from '@/lib/utils'
 import {
   type ColorRule,
   type QueryResult,
@@ -53,6 +35,24 @@ import {
   X,
 } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { Choice as ChoiceField } from '@/components/ui/choice'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Hint } from '@/components/ui/tooltip'
+import { chartModel, pieSlices } from '@/lib/analytics/charts'
+import {
+  type FormatContext,
+  inkOf,
+  SERIES_DARK,
+  SERIES_LIGHT,
+  valueText,
+} from '@/lib/analytics/format'
+import { VIZ_LABELS, vizFits } from '@/lib/analytics/model'
+import type { DescribedBase } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import { useMembers } from '@/lib/members'
+import { useTheme } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
 /**
  * How a result is shown, chosen and tuned — chapter 18 §3: the shapes it can take, then,

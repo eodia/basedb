@@ -42,7 +42,7 @@ Ein Client, der nur lokale Programme (stdio) starten kann, nutzt das Relay des R
 Token aus der Variable liest, die `--token-env` nennt:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

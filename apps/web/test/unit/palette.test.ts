@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KEEPS_MOD_K, isPaletteKey } from '../../src/lib/store/palette'
+import { isPaletteKey, KEEPS_MOD_K } from '../../src/lib/store/palette'
 
 /**
  * The command palette's shortcut.

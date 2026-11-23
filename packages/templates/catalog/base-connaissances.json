@@ -258,58 +258,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Support",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Questions en attente",
-          "table": "questions",
-          "aggregate": "count",
-          "filter": "[Statut] ne \"Répondue\""
-        },
-        {
-          "kind": "number",
-          "title": "Articles publiés",
-          "table": "articles",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"Publié\""
-        },
-        {
-          "kind": "number",
-          "title": "Votes « utile »",
-          "table": "articles",
-          "aggregate": "sum",
-          "field": "Utile"
-        },
-        {
-          "kind": "chart",
-          "title": "Questions par catégorie",
-          "table": "questions",
-          "group_by": "Catégorie",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Articles par niveau",
-          "table": "articles",
-          "group_by": "Niveau",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Questions récentes",
-          "table": "questions",
-          "fields": ["Question", "Statut", "Catégorie"],
-          "sort": "-Reçue le",
-          "limit": 6,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Nouvelle question",

@@ -1,8 +1,30 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import {
+  ChevronDown,
+  ChevronRight,
+  ClipboardPaste,
+  Copy,
+  ExternalLink,
+  Maximize2,
+  Plus,
+  Trash2,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { DateInput } from '@/components/app/date-picker'
 import type { Upload } from '@/components/app/files'
-import { Cell, ROW_HEIGHT, type Row, isTextual, rawText } from '@/components/app/grid/cell'
+import { Cell, isTextual, ROW_HEIGHT, type Row, rawText } from '@/components/app/grid/cell'
 import { ColumnHeader } from '@/components/app/grid/column-header'
 import {
   clipboardText,
@@ -52,28 +74,6 @@ import {
   type ViewState,
 } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import {
-  ChevronDown,
-  ChevronRight,
-  ClipboardPaste,
-  Copy,
-  ExternalLink,
-  Maximize2,
-  Plus,
-  Trash2,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * The grid — chapter 11 §1 and §2.
@@ -849,6 +849,7 @@ export function DataGrid({
         </div>
 
         {/* Body ───────────────────────────────────────────────────────────── */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: tracks the pointer for the other users; the grid's keyboard lives at its root */}
         <div
           ref={body}
           style={{ height: virtualizer.getTotalSize() }}
@@ -980,6 +981,7 @@ export function DataGrid({
                         editing?.rowIndex === rowIndex && editing.column === field.name
 
                       return (
+                        // biome-ignore lint/a11y/noStaticElementInteractions: selection by pointer; the grid's keyboard lives at its root
                         <div
                           key={field.name}
                           data-cell={key}

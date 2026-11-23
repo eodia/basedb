@@ -2062,13 +2062,6 @@ export default {
 		download: 'Stáhnout JSON',
 		downloadNote: 'K importu do vaší instance nebo k úpravě, než ji navrhnete do katalogu.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Řídicí panel</strong> „{label}“ – {blocks}',
-		blocks: {
-			one: '{n} blok',
-			few: '{n} bloky',
-			many: '{n} bloku',
-			other: '{n} bloků',
-		},
 		automation: '<strong>Automatizace</strong> „{label}“',
 		yes: 'Ano',
 		no: 'Ne',

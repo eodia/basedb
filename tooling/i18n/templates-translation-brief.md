@@ -5,7 +5,7 @@ qu'elle serve à tous.)
 
 You translate the **official base templates** of **basedb** — a collaborative database whose
 every table is a real PostgreSQL table — from French into ONE target language. A template is
-a whole ready-made base: its tables and fields, choices, sample rows, views, dashboards,
+a whole ready-made base: its tables and fields, choices, sample rows, views,
 automations and AI prompts. A person who applies it in your language must get a base that
 reads as if it had been written in your language, for your country.
 
@@ -15,18 +15,18 @@ A template is written once, in French (`packages/templates/catalog/<key>.json`).
 your language are a dictionary, `packages/templates/i18n/<code>/<key>.json`: a JSON object
 whose keys are the French texts, character for character, and whose values are your
 translations. A label is translated once and the code follows it everywhere it is cited
-(formulas, filters, views, dashboards, automations): you never see those, you only write the
+(formulas, filters, views, automations): you never see those, you only write the
 texts.
 
 ## Input
 
 - `tooling/i18n/templates-source.json`: for each template key, every text to translate, in
   reading order, with its `kind` and `where` (the place it first appears). Kinds:
-  - `label` — name of a table, a field, a relation, a view, a dashboard, an automation, the
+  - `label` — name of a table, a field, a relation, a view, an automation, the
     template or its base (80 characters at most). Short, like a column header.
   - `option` — a choice of a list (80 at most).
   - `tag` — a gallery tag (30 at most).
-  - `text` — a description, a summary, a form's title or wording, a dashboard block's text.
+  - `text` — a description, a summary, a form's title or wording.
   - `value` — a sample value of a short text: often the NAME of a fictitious company, person,
     product, event. `long` — a sample value of a long text. `rich` — the same in HTML.
   - `email`, `url` — sample addresses.

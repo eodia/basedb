@@ -1,5 +1,15 @@
 'use client'
 
+import {
+  conditionNeedsValue,
+  FORM_THEMES,
+  type FormAlign,
+  type FormCondition,
+  type FormConditionOp,
+  type FormFont,
+  type FormTheme,
+} from '@basedb/contracts'
+import { AlignCenter, AlignLeft, Check, GitBranch, Palette, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
@@ -8,18 +18,8 @@ import { $t } from '@/lib/i18n'
 import { PRESET_COLORS } from '@/lib/options'
 import { cn } from '@/lib/utils'
 import type { FormQuestion } from '@/lib/views'
-import {
-  FORM_THEMES,
-  type FormAlign,
-  type FormCondition,
-  type FormConditionOp,
-  type FormFont,
-  type FormTheme,
-  conditionNeedsValue,
-} from '@basedb/contracts'
-import { AlignCenter, AlignLeft, Check, GitBranch, Palette, X } from 'lucide-react'
 import { type AnswerWidget, widgetOf } from './answers'
-import { FONTS, type FormLook, THEMES, lookStyle } from './theme'
+import { FONTS, type FormLook, lookStyle, THEMES } from './theme'
 
 /**
  * The pieces of a form's editor (views/view-dialog.tsx): its look, chosen by seeing it,
@@ -48,10 +48,10 @@ export function ThemeGallery({
         const { style } = lookStyle({ ...look, theme: id, font: 'auto' }, tableColor)
         const on = look.theme === id
         return (
+          // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
           <button
             key={id}
             type="button"
-            // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
             role="radio"
             aria-checked={on}
             onClick={() => onChange(id)}
@@ -158,10 +158,10 @@ export function FontPicker({
   return (
     <div role="radiogroup" aria-label={$t('Police')} className="flex flex-wrap gap-1.5">
       {choices.map((c) => (
+        // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
         <button
           key={c.value}
           type="button"
-          // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
           role="radio"
           aria-checked={font === c.value}
           onClick={() => onChange(c.value)}
@@ -192,10 +192,10 @@ export function AlignPicker({
   return (
     <div role="radiogroup" aria-label={$t('Alignement')} className="flex gap-1.5">
       {choices.map(({ value, label, Icon }) => (
+        // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
         <button
           key={value}
           type="button"
-          // biome-ignore lint/a11y/useSemanticElements: swatches drawn as what they choose, the ARIA radio pattern
           role="radio"
           aria-checked={align === value}
           onClick={() => onChange(value)}

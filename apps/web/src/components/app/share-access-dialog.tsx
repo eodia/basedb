@@ -1,5 +1,7 @@
 'use client'
 
+import { Check, Copy, Link2, Loader2, UserPlus, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,13 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { type AccessLevel, type Invitation, type Sharing, api } from '@/lib/api/client'
+import { type AccessLevel, api, type Invitation, type Sharing } from '@/lib/api/client'
 import { linkTo } from '@/lib/base-path'
 import { $t, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Check, Copy, Link2, Loader2, UserPlus, Users, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Sharing a project or a base — chapter 05 §15.8.

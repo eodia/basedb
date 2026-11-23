@@ -1,4 +1,3 @@
-export { Basedb, Base, Table } from './client.js'
 export type {
   Aggregate,
   BasedbOptions,
@@ -8,6 +7,7 @@ export type {
   Page,
   Upload,
 } from './client.js'
+export { Base, Basedb, Table } from './client.js'
 export { BasedbError } from './errors.js'
 export { filter, literal } from './filter.js'
 export { typesOf } from './generate.js'

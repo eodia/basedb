@@ -14,24 +14,25 @@
     "format": "biome format --write .",
     "test": "turbo run test:unit",
     "test:unit": "turbo run test:unit",
-    "test:int": "turbo run test:int",
-    "test:vol": "turbo run test:vol",
-    "test:panne": "turbo run test:panne",
+    "test:server": "cargo test --manifest-path rust-server/Cargo.toml --workspace",
     "graph": "depcruise packages apps --config tooling/dependency-cruiser/.dependency-cruiser.cjs",
-    "demo": "node scripts/demo.mjs",
     "catalog": "node scripts/catalog-migrations.mjs",
     "i18n": "node tooling/i18n/extract.mjs && node tooling/i18n/check.mjs",
+    "dev": "node scripts/start.mjs",
     "start": "node scripts/start.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@testcontainers/postgresql": "^10.16.0",
-    "dependency-cruiser": "^16.9.0",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "@biomejs/biome": "^2.6.8",
+    "dependency-cruiser": "^18.8.0",
+    "turbo": "^2.11.13",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild"
+    ]
   }
 }

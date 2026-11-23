@@ -74,13 +74,6 @@
   "Par catégorie": "카테고리별",
   "Journal": "입출고 일지",
   "Calendrier": "캘린더",
-  "Stocks": "재고",
-  "Articles à commander": "주문이 필요한 품목",
-  "Articles suivis": "관리 중인 품목",
-  "Sorties ce mois-ci": "이번 달 출고",
-  "Articles par catégorie": "카테고리별 품목",
-  "Mouvements par type": "유형별 입출고",
-  "Derniers mouvements": "최근 입출고",
   "Grosse sortie": "대량 출고",
   "Prévient quand une sortie dépasse 50 unités.": "출고량이 50개를 초과하면 알립니다.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "대량 출고: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "수식",
   "Galerie": "갤러리",
   "IA": "AI",
+  "Stocks": "재고",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "재고 품목과 공급업체, 입고 및 출고 내역을 관리합니다."
 }

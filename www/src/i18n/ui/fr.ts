@@ -1956,9 +1956,6 @@ const fr = {
 		downloadNote: 'Pour l’importer dans votre instance, ou l’adapter avant de le proposer au catalogue.',
 		/** After a view's name: `{kind}` its kind, `{table}` its table. */
 		viewMeta: '— {kind}, {table}',
-		/** HTML; `{label}`: the dashboard's name, `{blocks}`: its number of blocks. */
-		dashboard: '<strong>Tableau de bord</strong> « {label} » — {blocks}',
-		blocks: forms({ one: '{n} bloc', other: '{n} blocs' }),
 		/** HTML; `{label}`: the automation's name. */
 		automation: '<strong>Automatisation</strong> « {label} »',
 		yes: 'Oui',

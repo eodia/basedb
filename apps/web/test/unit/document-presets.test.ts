@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { countBlocks, sendable, sourcesOf } from '../../src/components/app/documents/model'
-import { type PresetId, buildPreset } from '../../src/components/app/documents/presets'
+import { buildPreset, type PresetId } from '../../src/components/app/documents/presets'
 import type { DocumentBlock, Field, Table } from '../../src/lib/api/client'
 
 /**

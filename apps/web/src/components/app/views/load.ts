@@ -1,5 +1,5 @@
 import type { Row } from '@/components/app/grid/cell'
-import { type TableRef, api } from '@/lib/api/client'
+import { api, type TableRef } from '@/lib/api/client'
 
 /**
  * Every row a view needs, page after page, up to a ceiling.

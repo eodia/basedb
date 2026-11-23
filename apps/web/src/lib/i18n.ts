@@ -1,10 +1,10 @@
 import {
-  LOCALES,
-  LOCALE_NAMES,
-  type Locale,
-  SOURCE_LOCALE,
   isLocale,
+  LOCALE_NAMES,
+  LOCALES,
+  type Locale,
   matchLocale,
+  SOURCE_LOCALE,
 } from '@basedb/contracts'
 
 /**
@@ -249,4 +249,4 @@ export function followAccountLocale(chosen: Locale | null): boolean {
   return true
 }
 
-export { LOCALES, LOCALE_NAMES, type Locale }
+export { LOCALE_NAMES, LOCALES, type Locale }

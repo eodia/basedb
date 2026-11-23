@@ -1,9 +1,5 @@
 'use client'
 
-import { Hint } from '@/components/ui/tooltip'
-import { type Field, type StoredFile, fileHref, filesOf } from '@/lib/api/client'
-import { $t, intlLocale } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
   Download,
   FileArchive,
@@ -16,6 +12,10 @@ import {
   X,
 } from 'lucide-react'
 import { type DragEvent, type ReactNode, useRef, useState } from 'react'
+import { Hint } from '@/components/ui/tooltip'
+import { type Field, fileHref, filesOf, type StoredFile } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * The cells of `file` and `image` fields — chapter 04 §3 bis, chapter 11.
@@ -51,7 +51,10 @@ export function formatSize(bytes: number): string {
 function DocumentGlyph({
   type,
   className,
-}: { readonly type: string; readonly className?: string }) {
+}: {
+  readonly type: string
+  readonly className?: string
+}) {
   const Icon =
     type === 'application/pdf' || type.startsWith('text/') || type.includes('word')
       ? FileText

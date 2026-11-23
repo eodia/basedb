@@ -1,14 +1,14 @@
 'use client'
 
+import { KeyRound } from 'lucide-react'
+import { useState } from 'react'
 import { Brand } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type Me, api } from '@/lib/api/client'
+import { api, type Me } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { KeyRound } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * The first screen of an account an administrator created, or whose password was reset.

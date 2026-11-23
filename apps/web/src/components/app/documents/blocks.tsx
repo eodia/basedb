@@ -1,37 +1,11 @@
 'use client'
 
-import { RichTextEditor } from '@/components/app/rich-text-editor'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Choice } from '@/components/ui/choice'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Hint } from '@/components/ui/tooltip'
-import type {
-  DocumentAlign,
-  DocumentBlock,
-  DocumentColumnBlock,
-  DocumentColumnsBlock,
-  DocumentFieldsBlock,
-  DocumentRowsBlock,
-  Field,
-  Table,
-} from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -58,17 +32,43 @@ import {
   Trash2,
 } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import { RichTextEditor } from '@/components/app/rich-text-editor'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Hint } from '@/components/ui/tooltip'
+import type {
+  DocumentAlign,
+  DocumentBlock,
+  DocumentColumnBlock,
+  DocumentColumnsBlock,
+  DocumentFieldsBlock,
+  DocumentRowsBlock,
+  Field,
+  Table,
+} from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { BlockPicker, metaOf } from './block-picker'
-import { type SegmentOption, Segmented, Setting } from './controls'
+import { Segmented, type SegmentOption, Setting } from './controls'
 import { ImageInput } from './image-input'
 import {
   type BlockKind,
   COLUMN_KINDS,
-  type RowsChoice,
   imageFields,
   newBlock,
   numeric,
   plainOf,
+  type RowsChoice,
   shown,
   sourceKey,
 } from './model'
@@ -401,6 +401,7 @@ export function RichField({
     touched.current = true
   }
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: only listens for a user edit bubbling up from the editor inside
     <div onPointerDown={touch} onKeyDown={touch} onPaste={touch} onDrop={touch}>
       <RichTextEditor
         value={value}

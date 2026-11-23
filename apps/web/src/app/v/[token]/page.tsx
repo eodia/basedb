@@ -1,30 +1,30 @@
 'use client'
 
+import { Ban, Eye, Link2Off, Loader2, Lock } from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import type { Row } from '@/components/app/grid/cell'
 import { OptionBadge } from '@/components/app/option-badge'
-import { CardValue, RecordCard, colorOf, coverOf, titleOf } from '@/components/app/views/card'
+import { CardValue, colorOf, coverOf, RecordCard, titleOf } from '@/components/app/views/card'
 import { COLUMNS, COVER } from '@/components/app/views/gallery-view'
 import { Login } from '@/components/login'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   ApiError,
+  api,
   type Field,
   type Member,
   type SharedView,
   type SharedViewField,
-  api,
 } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { KnownMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
+import { useRouteToken } from '@/lib/route-token'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { KIND_INFO, localDateOf, orderByHand } from '@/lib/views'
-import { Ban, Eye, Link2Off, Loader2, Lock } from 'lucide-react'
-import { useParams } from 'next/navigation'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * A shared view — chapter 15 §10: the page someone opens from a link, to READ.
@@ -141,7 +141,7 @@ function screenRows(
 }
 
 export default function SharedViewPage() {
-  const { token } = useParams<{ token: string }>()
+  const token = useRouteToken()
   const [page, setPage] = useState<Page>({ kind: 'loading' })
   const [more, setMore] = useState(false)
   // Read after the first paint: the server does not know whether the page is framed.

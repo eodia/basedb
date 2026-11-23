@@ -6,12 +6,17 @@ description: Toutes les variables lues par basedb, et leur valeur par défaut.
 Toutes se placent dans le fichier `.env`, à côté de `docker-compose.yml`, que `docker compose`
 lit (le modèle complet et commenté est `.env.example`). Avec `docker run`, passez-les en `-e`. **Une valeur vide vaut « non défini ».**
 
-## Obligatoires
+## Secrets
+
+Avec `docker compose`, ils sont tirés au premier démarrage et gardés dans le volume
+`secrets` ; une valeur donnée dans `.env` l’emporte. Avec `docker run`, la clé d’instance et
+`DATABASE_URL` sont obligatoires. Toute variable `BASEDB_*`, `DATABASE_URL` et les
+`*_API_KEY` se lisent aussi dans un fichier : `BASEDB_ENCRYPTION_KEY_FILE=/run/secrets/cle`.
 
 | Variable | Rôle |
 |---|---|
-| `POSTGRES_PASSWORD` | mot de passe du conteneur PostgreSQL |
-| `BASEDB_ENCRYPTION_KEY` | clé d’instance : signe les sessions, chiffre les secrets. `openssl rand -base64 32`, une fois pour toutes |
+| `POSTGRES_PASSWORD` | mot de passe du conteneur PostgreSQL, lu à sa création seulement |
+| `BASEDB_ENCRYPTION_KEY` | clé d’instance : signe les sessions, chiffre les secrets. `openssl rand -base64 32`, une fois pour toutes ; à sauvegarder à part de la base |
 
 ## Base de données
 

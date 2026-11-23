@@ -41,7 +41,7 @@ Um cliente que só sabe iniciar programas locais (stdio) passa pelo relay do rep
 o token na variável indicada por `--token-env`:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

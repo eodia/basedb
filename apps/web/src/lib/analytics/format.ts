@@ -1,14 +1,14 @@
-import type { Field, Member } from '@/lib/api/client'
-import { formatNumber } from '@/lib/format'
-import { $t, $tp, dayLabel, intlLocale, monthLabel, monthNames, weekdayNames } from '@/lib/i18n'
-import { memberName } from '@/lib/members'
-import { dateFormat } from '@/lib/preferences'
 import type {
   QueryResult,
   ResultColumn,
   TemporalUnit,
   VisualizationSettings,
 } from '@basedb/contracts'
+import type { Field, Member } from '@/lib/api/client'
+import { formatNumber } from '@/lib/format'
+import { $t, $tp, dayLabel, intlLocale, monthLabel, monthNames, weekdayNames } from '@/lib/i18n'
+import { memberName } from '@/lib/members'
+import { dateFormat } from '@/lib/preferences'
 
 /**
  * How a result reads — chapter 18 §3: a period as a period (« janv. 2026 », « T2 2026 »),
@@ -17,8 +17,8 @@ import type {
  */
 
 /**
- * What a result's formatting reads of its base: the fields of its tables — a base as the
- * application describes it, or the few fields a shared dashboard's page receives.
+ * What a result's formatting reads of its base: the fields of its tables, as the
+ * application describes it.
  */
 export interface FormatBase {
   readonly tables: ReadonlyArray<{ readonly id: string; readonly fields: readonly Field[] }>
@@ -167,7 +167,7 @@ export function valueText(
       return option?.label ?? String(value)
     }
     case 'user':
-      // A shared dashboard names its people in the result: its page has no members' list.
+      // A result may name its people itself, where there is no members' list.
       return column.labels?.[String(value)] ?? memberName(context.members, value)
     case 'link':
     case 'multi_link':

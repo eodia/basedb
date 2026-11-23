@@ -1,16 +1,24 @@
 /**
- * Starts the whole stack — PostgreSQL, the API, the interface — in one command.
+ * Starts the whole stack — PostgreSQL, the server, the interface — in one command.
  *
- *   node scripts/start.mjs
+ *   node scripts/start.mjs          (or: corepack pnpm start / corepack pnpm dev)
  *
- * Picks free ports, applies the catalog, bootstraps an administrator, then keeps both
- * servers in the foreground. Ctrl+C stops everything, container included.
+ * Builds `basedb-server` with cargo (rust-server/, debug profile — `BASEDB_CARGO_PROFILE=release`
+ * for the optimized one, `BASEDB_CARGO_TOOLCHAIN=stable-x86_64-pc-windows-gnu` to name a
+ * toolchain), then starts it on :8787 (API, and MCP on :8788) and `next dev` on :3200 — each
+ * on the next free port when that one is taken. The server applies the catalog and
+ * bootstraps an administrator; Ctrl+C stops everything, container included.
+ *
+ * insights, when its repository sits beside this one (`../insights`, installed), starts
+ * with it and is served under `/insights` of the interface, as in the Docker image
+ * (scripts/insights-dev.mjs). `BASEDB_INSIGHTS=0` leaves it out.
  */
 
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, rmSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { fileURLToPath } from 'node:url'
+import { planInsights, startInsights } from './insights-dev.mjs'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
@@ -60,10 +68,29 @@ function require_(condition, message) {
   }
 }
 
+// The server: rust-server's `basedb-server`, built by cargo before anything starts — a
+// compilation error stops here rather than behind a blank interface.
+const PROFILE = process.env.BASEDB_CARGO_PROFILE === 'release' ? 'release' : 'debug'
+const TOOLCHAIN = process.env.BASEDB_CARGO_TOOLCHAIN
+  ? [`+${process.env.BASEDB_CARGO_TOOLCHAIN}`]
+  : []
+const MANIFEST = `${ROOT}rust-server/Cargo.toml`
 require_(
-  existsSync(`${ROOT}apps/api/dist/server.js`),
-  'The API is not compiled.\n  Run: corepack pnpm exec tsc -b apps/api',
+  spawnSync('cargo', [...TOOLCHAIN, '--version'], { stdio: 'ignore' }).status === 0,
+  'cargo is not on the PATH. Install Rust (https://rustup.rs, stable toolchain), see rust-server/README.md.',
 )
+console.log(grey(`  cargo build -p basedb-server (${PROFILE})…`))
+const built = spawnSync(
+  'cargo',
+  // biome-ignore format: the command reads better on one line
+  [...TOOLCHAIN, 'build', '--manifest-path', MANIFEST, '-p', 'basedb-server', ...(PROFILE === 'release' ? ['--release'] : [])],
+  { stdio: 'inherit' },
+)
+require_(built.status === 0, 'basedb-server did not build.')
+const TARGET = process.env.CARGO_TARGET_DIR || `${ROOT}rust-server/target`
+const SERVER = `${TARGET}/${PROFILE}/basedb-server${process.platform === 'win32' ? '.exe' : ''}`
+require_(existsSync(SERVER), `basedb-server not found at ${SERVER}.`)
+
 require_(
   spawnSync('docker', ['info'], { stdio: 'ignore' }).status === 0,
   'Docker is not responding. Start it, or provide DATABASE_URL yourself.',
@@ -71,11 +98,10 @@ require_(
 
 const CONTAINER = 'basedb-local'
 const pgPort = await freePort()
-const apiPort = await freePort()
-const webPort = await freePort()
-// The MCP entry point is optional: compiled, it starts; otherwise the stack runs without.
-const withMcp = existsSync(`${ROOT}apps/mcp/dist/server.js`)
-const mcpPort = withMcp ? await preferredPort(8788) : null
+const apiPort = await preferredPort(8787)
+const webPort = await preferredPort(3200)
+const mcpPort = await preferredPort(8788)
+const insights = await planInsights({ root: ROOT, webPort })
 
 console.log(`\n${bold('basedb')} ${grey('— local stack')}\n`)
 
@@ -112,11 +138,25 @@ console.log(`\r  ${green('✓')} PostgreSQL     ${cyan(`localhost:${pgPort}`)}  
 
 const DATABASE_URL = `postgres://postgres:basedb@localhost:${pgPort}/postgres`
 
+// insights' own services — its catalog, Trino — from its docker-compose.yml. Trino takes
+// a minute to answer; insights waits for it, and its pages open meanwhile.
+if (insights.dir !== undefined) {
+  const up = spawnSync('docker', ['compose', 'up', '-d', 'catalog', 'trino'], {
+    cwd: insights.dir,
+    stdio: 'ignore',
+  })
+  if (up.status !== 0) {
+    console.log(
+      `  ${red('✗')} insights       ${grey(`docker compose up failed in ${insights.dir}`)}`,
+    )
+  }
+}
+
 /** Starts a child process and relays its output, prefixed. */
 function start(name, command, args, env, cwd = ROOT) {
-  // No `shell: true`: both processes are launched by `node` with an explicit path, so
-  // there is nothing to interpret — and a shell would concatenate the arguments without
-  // escaping them.
+  // No `shell: true`: every process is launched with an explicit path, so there is
+  // nothing to interpret — and a shell would concatenate the arguments without escaping
+  // them.
   const child = spawn(command, args, { cwd, env: { ...process.env, ...env } })
   const prefix = grey(`  ${name.padEnd(4)} │ `)
   for (const stream of [child.stdout, child.stderr]) {
@@ -138,9 +178,11 @@ const DEV_KEY = 'developpement-seulement-ne-pas-utiliser-en-production'
 const DEV_EMAIL = 'admin@basedb.local'
 const DEV_PASSWORD = 'developpement-basedb'
 
-const api = start('api', 'node', ['apps/api/dist/server.js'], {
+const api = start('api', SERVER, [], {
   DATABASE_URL,
   PORT: String(apiPort),
+  // MCP is served on the API's `/mcp` and, for the clients configured with it, on its own port.
+  BASEDB_MCP_PORT: String(mcpPort),
   BASEDB_MIGRATE: '1',
   BASEDB_BOOTSTRAP: '1',
   BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY || DEV_KEY,
@@ -153,6 +195,10 @@ const api = start('api', 'node', ['apps/api/dist/server.js'], {
   // Reset links are printed here rather than sent: this container is thrown away, and
   // there is no SMTP to configure against it.
   BASEDB_DEV_MAIL: '1',
+  // insights is wired here by its addresses (insights-dev.mjs), or not at all: the `1` a
+  // `.env` copied from `.env.example` holds is docker compose's, not this server's.
+  BASEDB_INSIGHTS: '0',
+  ...(insights.basedbEnv ?? {}),
 })
 
 // The credentials are announced once the API says it has bootstrapped: having to hunt
@@ -164,8 +210,18 @@ api.stdout.on('data', (chunk) => {
     announced = true
     console.log(`\n  ${green('✓')} API            ${cyan(`http://localhost:${apiPort}`)}`)
     console.log(`  ${green('✓')} Interface      ${cyan(`http://localhost:${webPort}`)}`)
-    if (mcpPort !== null) {
-      console.log(`  ${green('✓')} MCP            ${cyan(`http://localhost:${mcpPort}/mcp`)}`)
+    console.log(`  ${green('✓')} MCP            ${cyan(`http://localhost:${mcpPort}/mcp`)}`)
+    if (insights.dir !== undefined) {
+      console.log(`  ${green('✓')} insights       ${cyan(insights.publicUrl)}`)
+      if (insights.sharedOpa) {
+        console.log(
+          grey(
+            `                   port 4200 taken: Trino asks the insights server there, not this one (${insights.apiPort})`,
+          ),
+        )
+      }
+    } else {
+      console.log(grey(`  · insights       not started: ${insights.skipped}`))
     }
     console.log(
       `\n  ${bold('Connexion')}   ${cyan(found[1])}   ${cyan(process.env.BASEDB_ADMIN_PASSWORD || DEV_PASSWORD)}`,
@@ -200,24 +256,17 @@ const web = start(
   ['node_modules/next/dist/bin/next', 'dev', '--port', String(webPort)],
   {
     BASEDB_API: `http://localhost:${apiPort}`,
-    ...(mcpPort === null ? {} : { BASEDB_MCP: `http://localhost:${mcpPort}/mcp` }),
+    BASEDB_MCP: `http://localhost:${mcpPort}/mcp`,
+    ...(insights.basedbWebEnv ?? {}),
   },
   `${ROOT}apps/web`,
 )
 
-// The MCP entry point: its own process on the same database, as chapter 10 wants
-// (`apps/api` and `apps/mcp` never reference each other). It applies nothing — the API
-// owns the catalog — and opens no connection before its first request, so it can start
-// alongside the API.
-const mcp =
-  mcpPort === null
-    ? null
-    : start('mcp', 'node', ['apps/mcp/dist/server.js'], {
-        DATABASE_URL,
-        BASEDB_MCP_PORT: String(mcpPort),
-        BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY || DEV_KEY,
-      })
-const children = [api, web, ...(mcp === null ? [] : [mcp])]
+const children = [
+  api,
+  web,
+  ...(insights.dir === undefined ? [] : startInsights(insights, start, { apiPort })),
+]
 
 let stopping = false
 function stop() {

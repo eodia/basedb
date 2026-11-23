@@ -1,0 +1,1 @@
+{"type":"object","required":["message"],"properties":{"message":{"type":"string"},"reads":{"type":"array","items":{"type":"object"}},"actions":{"type":"array","items":{"type":"object","required":["type"]}}}}

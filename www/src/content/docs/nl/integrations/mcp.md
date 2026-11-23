@@ -41,7 +41,7 @@ Een client die alleen lokale programma’s kan starten (stdio), gaat via de rela
 het token leest uit de variabele die `--token-env` aangeeft:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

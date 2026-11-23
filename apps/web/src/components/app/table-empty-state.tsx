@@ -1,9 +1,9 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import { TableIllustration } from '@/components/app/table-illustration'
 import { Button } from '@/components/ui/button'
 import { $t } from '@/lib/i18n'
-import { Plus } from 'lucide-react'
 
 export function TableEmptyState({
   kind = 'empty',

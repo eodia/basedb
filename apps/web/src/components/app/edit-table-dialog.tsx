@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { usePhysicalRename } from '@/components/app/lifecycle-dialogs'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
@@ -14,10 +15,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type Table, api } from '@/lib/api/client'
+import { api, type Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { useEffect, useRef, useState } from 'react'
 
 /**
  * Editing a table: what it is called, what it is for, how it looks.

@@ -1,5 +1,7 @@
 'use client'
 
+import { Check, CircleCheck, CircleX, Loader2, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import {
   type LinkNotice,
@@ -10,13 +12,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Hint } from '@/components/ui/tooltip'
-import { type Identities, type Me, api } from '@/lib/api/client'
+import { api, type Identities, type Me } from '@/lib/api/client'
 import { withBase } from '@/lib/base-path'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Check, CircleCheck, CircleX, Loader2, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Who one is to the others, and how one signs in — chapter 11 §10.

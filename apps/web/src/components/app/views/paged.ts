@@ -1,9 +1,9 @@
 'use client'
 
-import type { Row } from '@/components/app/grid/cell'
-import { type Table, api } from '@/lib/api/client'
-import { messageFor } from '@/lib/messages'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Row } from '@/components/app/grid/cell'
+import { api, type Table } from '@/lib/api/client'
+import { messageFor } from '@/lib/messages'
 
 /**
  * The rows of a view read page after page — the gallery's and the list's (ch. 11 §1.6):

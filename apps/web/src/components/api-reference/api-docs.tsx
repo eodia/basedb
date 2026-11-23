@@ -1,14 +1,5 @@
 'use client'
 
-import { TokenDialog } from '@/components/app/token-dialog'
-import { Markdown, headings, unescapeText } from '@/components/markdown'
-import { Button } from '@/components/ui/button'
-import { Choice } from '@/components/ui/choice'
-import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type ApiDocumentation, type DocSection, api } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +12,15 @@ import {
   TextAlignStart,
 } from 'lucide-react'
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { TokenDialog } from '@/components/app/token-dialog'
+import { headings, Markdown, unescapeText } from '@/components/markdown'
+import { Button } from '@/components/ui/button'
+import { Choice } from '@/components/ui/choice'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { type ApiDocumentation, api, type DocSection } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
 
 /**
  * The documentation of a base, laid out as a documentation site — chapter 08 §9.4 for the
@@ -468,7 +468,10 @@ interface DocBase {
 function TokenButton({
   base,
   hasPassword,
-}: { readonly base: DocBase; readonly hasPassword?: boolean }) {
+}: {
+  readonly base: DocBase
+  readonly hasPassword?: boolean
+}) {
   const [open, setOpen] = useState(false)
   if (base.actions?.includes('manage_tokens') !== true) return null
   return (

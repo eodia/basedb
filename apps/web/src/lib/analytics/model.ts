@@ -1,6 +1,3 @@
-import type { DescribedBase, Field, Table } from '@/lib/api/client'
-import { effectiveKind } from '@/lib/computed'
-import { $t, $tp, dayLabel, monthLabel, msg } from '@/lib/i18n'
 import {
   type Aggregation,
   type AggregationFn,
@@ -8,23 +5,26 @@ import {
   type BuilderQuery,
   COLUMNLESS_FNS,
   type ColumnRef,
+  columnName,
   type Filter,
   type FilterOp,
+  finerUnit,
   type Join,
   type JoinKind,
+  periodExpression,
   QUERY_LIMITS,
   type QueryResult,
   type QuestionQuery,
   type ResultColumn,
+  resolveDateExpression,
+  sameColumnRef,
   type TemporalTruncation,
   type TemporalUnit,
   type VisualizationType,
-  columnName,
-  finerUnit,
-  periodExpression,
-  resolveDateExpression,
-  sameColumnRef,
 } from '@basedb/contracts'
+import type { DescribedBase, Field, Table } from '@/lib/api/client'
+import { effectiveKind } from '@/lib/computed'
+import { $t, $tp, dayLabel, monthLabel, msg } from '@/lib/i18n'
 
 /**
  * What the builder of questions works with — chapter 18 §3, on screen: the columns a query

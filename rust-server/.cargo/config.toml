@@ -1,0 +1,4 @@
+# Windows : chaîne GNU (MinGW-w64 de %LOCALAPPDATA%\mingw64), comme le serveur d'insights.
+[target.x86_64-pc-windows-gnu]
+linker = "gcc"
+rustflags = ["-C", "link-self-contained=no"]

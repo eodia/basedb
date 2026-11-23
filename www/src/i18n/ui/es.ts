@@ -2065,12 +2065,6 @@ export default {
 		download: 'Descargar el JSON',
 		downloadNote: 'Para importarlo en tu instancia, o adaptarlo antes de proponerlo para el catálogo.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Panel</strong> «{label}» — {blocks}',
-		blocks: {
-			one: '{n} bloque',
-			many: '{n} bloques',
-			other: '{n} bloques',
-		},
 		automation: '<strong>Automatización</strong> «{label}»',
 		yes: 'Sí',
 		no: 'No',

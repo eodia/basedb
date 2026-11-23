@@ -11,9 +11,9 @@ import { $t, $tp } from '@/lib/i18n'
 
 $t('Enregistrer')
 $t('Nouveau champ dans {table}', { table: table.label })
-$tp(count, '{count} ligne', '{count} lignes')        // jamais `ligne{n > 1 ? 's' : ''}`
-$t('Moyenne||hauteur de ligne')                      // un mot, deux sens : le sens après ||
-msg('Actif')                                         // traduit à l'affichage : $t(statut)
+$tp(count, '{count} ligne', '{count} lignes') // jamais `ligne{n > 1 ? 's' : ''}`
+$t('Moyenne||hauteur de ligne') // un mot, deux sens : le sens après ||
+msg('Actif') // traduit à l'affichage : $t(statut)
 ```
 
 - La phrase française **est** la clé ; une phrase non traduite s'affiche en français.
@@ -69,13 +69,13 @@ Consigne donnée aux traducteurs : `templates-translation-brief.md`.
 
 ## La documentation API et MCP d'une base
 
-Le noyau l'écrit lui-même (`packages/core/src/catalog/documentation.ts`), dans la langue de
-l'écran que l'interface envoie (`x-basedb-locale`). Même convention qu'avec `$t` : chaque
-paragraphe passe par `t('phrase française', { nom })`, et un libellé rangé dans une table par
-`phrase('…')`. Les traductions sont dans `packages/core/src/catalog/documentation-texts/<code>.ts`
+Le serveur l'écrit lui-même (`rust-server/crates/catalog/src/documentation.rs`), dans la langue
+de l'écran que l'interface envoie (`x-basedb-locale`). Même convention qu'avec `$t` : chaque
+paragraphe passe par `t.t("phrase française")`, ou `t.tv("… {nom} …", &[("nom", valeur)])`
+quand il a des valeurs. Les traductions sont dans `rust-server/crates/catalog/src/documentation/texts/<code>.json`
 (phrase française → traduction). Une phrase ajoutée ou reformulée en français fait échouer
-`packages/core/test/unit/documentation-texts.test.ts` dans chaque langue qui ne l'a pas ;
-d'ici là, elle s'affiche en français. Ce qui n'est pas de la prose reste tel quel : noms, chemins,
+`rust-server/crates/catalog/src/documentation/tests.rs` (`cargo test -p basedb-catalog`) dans
+chaque langue qui ne l'a pas ; d'ici là, elle s'affiche en français. Ce qui n'est pas de la prose reste tel quel : noms, chemins,
 codes, et les messages du serveur cités en exemple.
 
 ## Le site (`www/`)

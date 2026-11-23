@@ -1,21 +1,23 @@
 'use client'
 
+import { Link2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { AddressLink } from '@/components/app/address'
 import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
 import { FieldButton } from '@/components/app/field-button'
 import { FilesCell, type Upload } from '@/components/app/files'
-import { LongTextCell, UrlLink, longTextExcerpt } from '@/components/app/markdown-text'
+import { LongTextCell, longTextExcerpt, UrlLink } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
+  choicesOf,
   EnumPicker,
   LinkChips,
   LinkPicker,
+  linksOf,
   MultiEnumPicker,
   MultiLinkPicker,
   type SearchLink,
-  choicesOf,
-  linksOf,
 } from '@/components/app/pickers'
 import {
   BarcodeValue,
@@ -29,14 +31,12 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Kbd, useModKey } from '@/components/ui/kbd'
 import { Hint } from '@/components/ui/tooltip'
-import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
+import { type Field, filesOf, type LinkOption } from '@/lib/api/client'
 import { shownField } from '@/lib/computed'
 import { type DateKind, displayStored, isDateKind, storedFromText } from '@/lib/dates'
 import { editText, formatNumber, formatOf, parseNumberInput } from '@/lib/format'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Link2 } from 'lucide-react'
-import { useRef, useState } from 'react'
 
 /**
  * One cell — chapter 11 §2 and §3.
@@ -425,6 +425,7 @@ export function Cell({
   const format = formatOf(field)
   if ((field.kind === 'email' || format === 'phone') && initial !== '') {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: a double click is the pointer's way into the editor; the grid's keyboard opens it too
       <span
         className="flex w-full min-w-0 items-center px-2"
         onDoubleClick={() => {
@@ -437,6 +438,7 @@ export function Cell({
   }
   if (format === 'address' && initial !== '') {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: a double click is the pointer's way into the editor; the grid's keyboard opens it too
       <span
         className="flex w-full min-w-0 items-center px-2"
         onDoubleClick={() => {
@@ -449,6 +451,7 @@ export function Cell({
   }
   if (format === 'barcode' && initial !== '') {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: a double click is the pointer's way into the editor; the grid's keyboard opens it too
       <span
         className="flex w-full min-w-0 items-center px-2"
         onDoubleClick={() => {
@@ -462,6 +465,7 @@ export function Cell({
 
   if (field.kind === 'url' && initial !== '') {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: a double click is the pointer's way into the editor; the grid's keyboard opens it too
       <span
         className="flex w-full min-w-0 items-center px-2"
         onDoubleClick={() => {

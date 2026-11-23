@@ -1,5 +1,7 @@
 'use client'
 
+import { Eye, EyeOff, Info, Loader2, Lock, Pencil } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Choice as ChoiceField } from '@/components/ui/choice'
@@ -20,16 +22,14 @@ import {
 import { Hint } from '@/components/ui/tooltip'
 import {
   type AdminUser,
+  api,
   type EffectiveMask,
   type FieldAccess,
   type FieldRule,
-  api,
 } from '@/lib/api/client'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff, Info, Loader2, Lock, Pencil } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Below the grid — the fields of one table, group by group (chapter 05 §4).

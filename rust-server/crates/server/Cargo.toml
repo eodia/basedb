@@ -1,0 +1,39 @@
+[package]
+name = "basedb-server"
+description = "Le serveur basedb : migre le catalogue, assemble les routeurs des domaines, sert l'API, MCP et l'interface."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "basedb-server"
+path = "src/main.rs"
+
+[dependencies]
+basedb_base.workspace = true
+basedb_contracts.workspace = true
+basedb_catalog.workspace = true
+basedb_records.workspace = true
+basedb_admin.workspace = true
+basedb_automations.workspace = true
+basedb_ai.workspace = true
+basedb_mcp.workspace = true
+basedb_web.workspace = true
+tokio.workspace = true
+axum.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+flate2 = "1"
+http-body-util.workspace = true
+tower.workspace = true
+tokio-postgres.workspace = true
+
+[dev-dependencies]
+bytes.workspace = true
+futures-util.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+

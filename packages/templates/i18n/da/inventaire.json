@@ -74,13 +74,6 @@
   "Par catégorie": "Efter kategori",
   "Journal": "Journal",
   "Calendrier": "Kalender",
-  "Stocks": "Lager",
-  "Articles à commander": "Varer der skal bestilles",
-  "Articles suivis": "Overvågede varer",
-  "Sorties ce mois-ci": "Udgange denne måned",
-  "Articles par catégorie": "Varer efter kategori",
-  "Mouvements par type": "Bevægelser efter type",
-  "Derniers mouvements": "Seneste bevægelser",
   "Grosse sortie": "Stor udgang",
   "Prévient quand une sortie dépasse 50 unités.": "Giver besked, når en udgang overstiger 50 enheder.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Stor udgang: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formler",
   "Galerie": "Galleri",
   "IA": "AI",
+  "Stocks": "Lager",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Varerne på lager, deres leverandører og ind- og udgange."
 }

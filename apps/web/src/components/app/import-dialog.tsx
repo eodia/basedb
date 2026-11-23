@@ -1,5 +1,7 @@
 'use client'
 
+import { AlertTriangle, ArrowLeft, Check, FileText, Loader2, Upload } from 'lucide-react'
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,28 +21,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ApiError, type DescribedBase, type Field, type Table, api } from '@/lib/api/client'
+import { ApiError, api, type DescribedBase, type Field, type Table } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import {
   type Cell,
-  DELIMITERS,
-  ImportError,
-  type Kind,
-  type ParsedTable,
   chunk,
   convert,
+  DELIMITERS,
+  ImportError,
   inferKind,
   isImportable,
+  type Kind,
   labelFromFileName,
   matchColumns,
+  type ParsedTable,
   parseSheet,
   parseText,
 } from '@/lib/import'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { type Sheet, WorkbookError, isWorkbookName, readWorkbook } from '@/lib/xlsx'
-import { AlertTriangle, ArrowLeft, Check, FileText, Loader2, Upload } from 'lucide-react'
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { isWorkbookName, readWorkbook, type Sheet, WorkbookError } from '@/lib/xlsx'
 
 /**
  * Importing a file into a table — or into a table it creates.

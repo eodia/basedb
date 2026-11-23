@@ -24,13 +24,19 @@ basedb reads it, as it is created, as it is updated. Run it again when the table
 import { Basedb, BasedbError, filter } from '@basedb/sdk'
 import type { Schema } from './basedb.js'
 
-const db = new Basedb<Schema>({ url: 'https://basedb.example.com', token: process.env.BASEDB_TOKEN! })
+const db = new Basedb<Schema>({
+  url: 'https://basedb.example.com',
+  token: process.env.BASEDB_TOKEN!,
+})
 const deals = db.base('b_t4z56fq_ventes').table('opportunites')
 
 const deal = await deals.create({ titre: 'Audit', montant: 12500, statut: 'nouveau' })
 await deals.update(deal._id, { statut: 'gagne' })
 
-for await (const row of deals.all({ filter: filter`statut eq ${'gagne'} and montant gte ${10000}`, sort: '-montant' })) {
+for await (const row of deals.all({
+  filter: filter`statut eq ${'gagne'} and montant gte ${10000}`,
+  sort: '-montant',
+})) {
   console.log(row.titre, row.montant)
 }
 ```

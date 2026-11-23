@@ -1,27 +1,6 @@
 'use client'
 
-import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
-import { ResizablePanel } from '@/components/app/resizable-panel'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
-import { Hint } from '@/components/ui/tooltip'
 import {
-  type CopilotAction,
-  type CopilotAnswer,
-  type CopilotField,
-  type CopilotMessage,
-  type DescribedBase,
-  type Table,
-  api,
-} from '@/lib/api/client'
-import { addFields, createTable, insertRecords, updateRecords } from '@/lib/copilot'
-import { $t, $tp } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { useWorkspace } from '@/lib/store/workspace'
-import { cn } from '@/lib/utils'
-import {
-  ArrowUp,
   Check,
   ChevronRight,
   Columns3,
@@ -34,12 +13,40 @@ import {
   RotateCcw,
   Rows3,
   Shield,
-  Sparkles,
   Table2,
   Terminal,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AiStar } from '@/components/app/ai-star'
+import {
+  type Attachment,
+  AttachmentChips,
+  attachmentsToSend,
+  CopilotComposer,
+  questionFor,
+  useAttachments,
+} from '@/components/app/copilot-attachments'
+import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
+import { ResizablePanel } from '@/components/app/resizable-panel'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Hint } from '@/components/ui/tooltip'
+import {
+  api,
+  type CopilotAction,
+  type CopilotAnswer,
+  type CopilotField,
+  type CopilotMessage,
+  type DescribedBase,
+  type Table,
+} from '@/lib/api/client'
+import { addFields, createTable, insertRecords, updateRecords } from '@/lib/copilot'
+import { $t, $tp } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { useWorkspace } from '@/lib/store/workspace'
+import { cn } from '@/lib/utils'
+import { speakReply } from '@/lib/voice'
 
 /**
  * The copilot — chapter 12 §1.6.
@@ -49,7 +56,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
  * insert or to change. A card changes nothing until its button is pressed, and then goes
  * through the same routes as the forms — the copilot proposes, the person applies.
  *
- * By default only the structure leaves the instance. The box under the conversation lets
+ * By default only the structure leaves the instance. « Autoriser l'accès », in the box, lets
  * the copilot READ rows for this conversation — to count, to sum, to answer « lesquelles » —
  * and every read it makes is listed under its answer: what it read is what left.
  */
@@ -76,6 +83,7 @@ type CardState =
 interface Turn {
   readonly id: number
   readonly question: string
+  readonly attachments?: readonly Attachment[]
   readonly answer: CopilotAnswer | null
   readonly error: string | null
   readonly cards: readonly CardState[]
@@ -122,6 +130,8 @@ export function CopilotPanel({
   const [busy, setBusy] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
+  const attachments = useAttachments()
+  const takeAttachments = attachments.take
 
   // Another base, another conversation.
   useEffect(() => {
@@ -150,8 +160,10 @@ export function CopilotPanel({
 
   const send = useCallback(
     async (text: string) => {
-      const question = text.trim()
-      if (question === '' || busy) return
+      if (busy) return
+      const attached = takeAttachments()
+      const question = questionFor(text, attached)
+      if (question === '') return
       const id = ++sequence
       const history: CopilotMessage[] = conversation.turns.flatMap((t) => [
         { role: 'user' as const, content: t.question },
@@ -159,7 +171,10 @@ export function CopilotPanel({
       ])
       update((c) => ({
         ...c,
-        turns: [...c.turns, { id, question, answer: null, error: null, cards: [] }],
+        turns: [
+          ...c.turns,
+          { id, question, attachments: attached, answer: null, error: null, cards: [] },
+        ],
       }))
       setPrompt('')
       setBusy(true)
@@ -169,6 +184,10 @@ export function CopilotPanel({
           filter: view.filter.trim() === '' ? null : view.filter,
           sort: view.sort,
           messages: [...history, { role: 'user', content: question }],
+          attachments: attachmentsToSend([
+            ...conversation.turns.map((t) => t.attachments),
+            attached,
+          ]),
           readData: conversation.readData,
         })
         update((c) => ({
@@ -179,6 +198,7 @@ export function CopilotPanel({
               : t,
           ),
         }))
+        speakReply(answer.message)
       } catch (e) {
         update((c) => ({
           ...c,
@@ -189,7 +209,7 @@ export function CopilotPanel({
         input.current?.focus()
       }
     },
-    [busy, conversation, update, base.name, table, view],
+    [busy, conversation, update, base.name, table, view, takeAttachments],
   )
 
   // A question put from the command palette: sent as if typed here, once the panel is free.
@@ -214,21 +234,19 @@ export function CopilotPanel({
     [update],
   )
 
-  const apply = useCallback(
-    async (turnId: number, index: number, action: CopilotAction, extra: ApplyExtra) => {
-      setCard(turnId, index, { status: 'busy' })
-      try {
-        const note = await run(action, extra)
-        setCard(turnId, index, { status: 'done', note })
-      } catch (e) {
-        setCard(turnId, index, {
-          status: 'error',
-          note: e instanceof Error && !('code' in e) ? e.message : messageFor(e),
-        })
-      }
-    },
-    [setCard],
-  )
+  // A plain function: `run` below closes over this render's conversation and callbacks.
+  const apply = async (turnId: number, index: number, action: CopilotAction, extra: ApplyExtra) => {
+    setCard(turnId, index, { status: 'busy' })
+    try {
+      const note = await run(action, extra)
+      setCard(turnId, index, { status: 'done', note })
+    } catch (e) {
+      setCard(turnId, index, {
+        status: 'error',
+        note: e instanceof Error && !('code' in e) ? e.message : messageFor(e),
+      })
+    }
+  }
 
   /** What applying a card does — the ordinary routes, one after the other. */
   const run = async (action: CopilotAction, extra: ApplyExtra): Promise<string> => {
@@ -276,7 +294,7 @@ export function CopilotPanel({
   return (
     <ResizablePanel panel="copilot" label={$t('le Copilot')} className="bg-sidebar">
       <header className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-        <Sparkles className="size-4 text-primary" />
+        <AiStar size={16} />
         <span className="flex-1 truncate text-sm font-medium">
           {$t('Copilot')} <span className="font-normal text-muted-foreground">· {base.label}</span>
         </span>
@@ -338,8 +356,11 @@ export function CopilotPanel({
 
         {conversation.turns.map((turn) => (
           <div key={turn.id} className="space-y-2">
-            <div className="ml-8 whitespace-pre-line rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">
-              {turn.question}
+            <div className="ml-8 space-y-2 rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">
+              {turn.attachments !== undefined && (
+                <AttachmentChips attachments={turn.attachments} tone="onPrimary" />
+              )}
+              <p className="whitespace-pre-line">{turn.question}</p>
             </div>
 
             {turn.answer === null && turn.error === null && (
@@ -387,59 +408,35 @@ export function CopilotPanel({
       </div>
 
       <div className="shrink-0 space-y-2 border-t p-3">
-        <div className="flex items-start gap-2 text-xs">
-          <Checkbox
-            id="copilot-read"
-            checked={conversation.readData}
-            onCheckedChange={(next) => update((c) => ({ ...c, readData: next === true }))}
-            disabled={busy}
-            className="mt-px"
-          />
-          <label
-            htmlFor="copilot-read"
-            className="cursor-pointer leading-snug text-muted-foreground"
-          >
-            <span className="text-foreground">{$t('Autoriser la lecture des données')}</span>{' '}
-            {$t(
-              'pour cette conversation : le Copilot peut lire des lignes que vous voyez (50 au plus par lecture) et les envoyer au fournisseur d’IA pour répondre.',
-            )}
-          </label>
-        </div>
         {!conversation.readData && (
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Shield className="size-3" />
             {$t('Seuls votre demande et la structure de la base sont envoyés.')}
           </p>
         )}
-        <div className="relative">
-          <Textarea
-            ref={input}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter sends, Maj+Entrée goes to the next line — the convention of every
-              // chat box, and the one people's fingers already know.
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void send(prompt)
-              }
-            }}
-            rows={3}
-            placeholder={$t(
-              'Ajoute une colonne priorité, génère 30 visites, combien de visites urgentes…',
-            )}
-            className="resize-none pr-11 text-sm"
-          />
-          <Button
-            size="icon-sm"
-            className="absolute right-2 bottom-2"
-            onClick={() => void send(prompt)}
-            disabled={busy || prompt.trim() === ''}
-            aria-label={$t('Envoyer')}
-          >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
-          </Button>
-        </div>
+        <CopilotComposer
+          value={prompt}
+          onChange={setPrompt}
+          onSend={() => void send(prompt)}
+          onDictated={(text) => void send(text)}
+          busy={busy}
+          inputRef={input}
+          attachments={attachments}
+          access={{
+            allowed: conversation.readData,
+            onChange: (readData) => update((c) => ({ ...c, readData })),
+            hint: conversation.readData
+              ? $t(
+                  'Le Copilot peut lire, pour cette conversation, des lignes que vous voyez (50 au plus par lecture) et les envoyer au fournisseur d’IA.',
+                )
+              : $t(
+                  'Autoriser le Copilot à lire, pour cette conversation, des lignes que vous voyez (50 au plus par lecture) et à les envoyer au fournisseur d’IA.',
+                ),
+          }}
+          placeholder={$t(
+            'Ajoute une colonne priorité, génère 30 visites, combien de visites urgentes…',
+          )}
+        />
       </div>
     </ResizablePanel>
   )

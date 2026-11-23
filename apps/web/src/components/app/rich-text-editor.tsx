@@ -1,28 +1,11 @@
 'use client'
 
-import { FieldIcon } from '@/components/app/field-icon'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Field } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import { isBlankHtml, pillsToVariables, variablesToPills } from '@/lib/rich-text'
-import { cn } from '@/lib/utils'
 import {
   type Editor,
   EditorContent,
   Extension,
-  Node,
   mergeAttributes,
+  Node,
   useEditor,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -42,14 +25,31 @@ import {
   Underline,
 } from 'lucide-react'
 import {
+  createElement,
   Fragment,
   type ReactNode,
-  createElement,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import { FieldIcon } from '@/components/app/field-icon'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { Field } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import { isBlankHtml, pillsToVariables, variablesToPills } from '@/lib/rich-text'
+import { cn } from '@/lib/utils'
 
 /**
  * The editor of a rich text — the HTML variant of a long text (chapter 04 §2.2), and of
@@ -62,7 +62,7 @@ import {
  *
  * A column of the row can be cited: `{{nom}}` in the stored HTML, a pill here, the row's
  * value wherever the text is read (chapter 04 §2.2, « Variables »). Elsewhere, what may be
- * cited is given as `variables` — a dashboard's text cites its questions and its filters.
+ * cited is given as `variables`.
  */
 
 /** A value a text may cite: `{{name}}` as stored, its label on the pill and in the menu. */
@@ -586,7 +586,11 @@ export function RichTextView({
   html,
   className,
   cite,
-}: { readonly html: string; readonly className?: string; readonly cite?: Cite }) {
+}: {
+  readonly html: string
+  readonly className?: string
+  readonly cite?: Cite
+}) {
   const nodes = useMemo(() => {
     if (typeof window === 'undefined') return null
     const body = new DOMParser().parseFromString(html, 'text/html').body

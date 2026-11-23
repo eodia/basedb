@@ -1,5 +1,5 @@
-import { $t } from '@/lib/i18n'
 import { useId } from 'react'
+import { $t } from '@/lib/i18n'
 import styles from './workspace-illustration.module.css'
 
 /** Decorative table and SQL sketches: no records or schema from the current base. */

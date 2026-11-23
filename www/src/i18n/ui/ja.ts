@@ -2035,11 +2035,6 @@ export default {
 		download: 'JSONをダウンロード',
 		downloadNote: '自分のインスタンスにインポートするため、またはカタログに提案する前に調整するために。',
 		viewMeta: '— {kind}、{table}',
-		dashboard: '<strong>ダッシュボード</strong>「{label}」 — {blocks}',
-		blocks: {
-			one: '{n} 個のブロック',
-			other: '{n} 個のブロック',
-		},
 		automation: '<strong>オートメーション</strong>「{label}」',
 		yes: 'はい',
 		no: 'いいえ',

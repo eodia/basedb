@@ -1,10 +1,10 @@
 'use client'
 
+import { type ReactNode, useCallback, useRef } from 'react'
 import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { MAIN_MIN, PANEL_DEFAULTS, PANEL_MIN, type PanelKey, usePanels } from '@/lib/store/panels'
 import { cn } from '@/lib/utils'
-import { type ReactNode, useCallback, useRef } from 'react'
 
 /** The step of an arrow key on the handle; Shift makes it four times larger. */
 const STEP = 16
@@ -112,6 +112,7 @@ export function ResizablePanel({
     >
       {/* The focusable window splitter of the ARIA Authoring Practices. */}
       <Hint label={$t('Glisser pour redimensionner — double-clic : largeur par défaut')}>
+        {/* biome-ignore lint/a11y/useSemanticElements: a resizable splitter is a focusable separator, which an <hr> cannot be */}
         <div
           role="separator"
           aria-orientation="vertical"

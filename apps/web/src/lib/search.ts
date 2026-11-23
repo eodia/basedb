@@ -4,7 +4,7 @@ import type { Place } from '@/lib/address-bar'
  * The search of the command palette — what it matches, how it ranks, what it remembers.
  *
  * Nothing here talks to the API: the palette gathers what it can search — tables, views,
- * dashboards, commands, rows — and this file decides which of them answer a text, and in
+ * questions, commands, rows — and this file decides which of them answer a text, and in
  * what order. Four kinds of match, from the surest to the loosest: the text itself, the
  * start of one of its words, the starts of several (`nc` or `ncl` for « Nouveau client »,
  * `nouvtab` for « Nouvelle table »), and the text typed with a slip — a letter swapped,

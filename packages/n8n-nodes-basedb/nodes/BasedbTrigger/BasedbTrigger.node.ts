@@ -6,7 +6,7 @@ import {
   type IPollFunctions,
   NodeConnectionTypes,
 } from 'n8n-workflow'
-import { type PollState, freshRows, pollFilter } from '../logic'
+import { freshRows, type PollState, pollFilter } from '../logic'
 import { allRows, getBases, getTables } from '../transport'
 
 /**

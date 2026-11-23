@@ -1,9 +1,5 @@
 'use client'
 
-import { FieldIcon } from '@/components/app/field-icon'
-import { OptionBadge } from '@/components/app/option-badge'
-import { $t, $tp, intlLocale, msg } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
   Building2,
   CalendarDays,
@@ -34,6 +30,10 @@ import {
   Zap,
 } from 'lucide-react'
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { FieldIcon } from '@/components/app/field-icon'
+import { OptionBadge } from '@/components/app/option-badge'
+import { $t, $tp, intlLocale, msg } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * A window onto the application, beside the sign-in form.
@@ -488,7 +488,10 @@ function useScenes(measure: (target: Aim) => Spot | null) {
 function Counter({
   value,
   format,
-}: { readonly value: number; readonly format: (n: number) => string }) {
+}: {
+  readonly value: number
+  readonly format: (n: number) => string
+}) {
   const [shown, setShown] = useState(value)
   const from = useRef(value)
   useEffect(() => {

@@ -1,5 +1,23 @@
 'use client'
 
+import {
+  ArrowDown,
+  ArrowUp,
+  BookmarkPlus,
+  Eye,
+  Filter,
+  Loader2,
+  Lock,
+  Pencil,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Settings2,
+  ShieldCheck,
+  X,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AiWaitingProvider, useAiWatch } from '@/components/app/ai-pending'
 import {
   type BlockedDeletion,
@@ -15,7 +33,7 @@ import { ExpressionEditor, flatten, format } from '@/components/app/expression-e
 import { FieldIcon } from '@/components/app/field-icon'
 import type { Row } from '@/components/app/grid/cell'
 import { rawText } from '@/components/app/grid/cell'
-import { DataGrid, type RowColor, groupKey } from '@/components/app/grid/data-grid'
+import { DataGrid, groupKey, type RowColor } from '@/components/app/grid/data-grid'
 import { DisplayMenu, GroupMenu, SearchBox } from '@/components/app/grid/grid-toolbar'
 import { PaginationBar } from '@/components/app/grid/pagination-bar'
 import { SelectionBar } from '@/components/app/grid/selection-bar'
@@ -53,6 +71,7 @@ import {
   type Aggregates,
   ApiError,
   type AppNotification,
+  api,
   type BaseEnvironment,
   type DescribedBase,
   type Field,
@@ -65,11 +84,10 @@ import {
   type Table,
   type TableButton,
   type ViewKind,
-  api,
 } from '@/lib/api/client'
 import { withValueFields } from '@/lib/computed'
 import { compileMatcher } from '@/lib/evaluate'
-import { type ExportFormat, copy, download, serialize } from '@/lib/export'
+import { copy, download, type ExportFormat, serialize } from '@/lib/export'
 import { quoteLiteral } from '@/lib/expression'
 import { searchClause, systemColumns } from '@/lib/grid'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
@@ -77,25 +95,25 @@ import { useLive } from '@/lib/live'
 import { MembersProvider } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import {
-  ROW_HEIGHTS,
-  type SortTerm,
-  type ViewState,
   arrangeFields,
   emptyView,
+  ROW_HEIGHTS,
+  type SortTerm,
   sortParameter,
   useActiveTab,
   useWorkspace,
+  type ViewState,
 } from '@/lib/store/workspace'
 import { asOneStep, configureJournal, journalKey, redo, startJournal, undo } from '@/lib/undo'
 import { cn } from '@/lib/utils'
 import {
-  KIND_INFO,
   andFilter,
   calendarSpec,
   formSpec,
   freeLabel,
   gallerySpec,
   isModified,
+  KIND_INFO,
   kanbanSpec,
   listSpec,
   mapSpec,
@@ -103,24 +121,6 @@ import {
   timelineSpec,
   viewStateOf,
 } from '@/lib/views'
-import {
-  ArrowDown,
-  ArrowUp,
-  BookmarkPlus,
-  Eye,
-  Filter,
-  Loader2,
-  Lock,
-  Pencil,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Settings2,
-  ShieldCheck,
-  X,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The working area — chapter 11 §1.
@@ -398,9 +398,37 @@ export function Workspace({
 
   // ── Loading ──────────────────────────────────────────────────────────────────
 
+  /** The total as it stands — read by `load`, which must not reload when it lands. */
+  const knownTotal = useRef(view.total)
+  knownTotal.current = view.total
+  /** The last count asked: an older one landing late must not overwrite it. */
+  const countSeq = useRef(0)
+
+  /**
+   * The view's total, asked on its own beside the page (ch. 11 §1.1): `count=exact` costs a
+   * scan, capped at 100 000, and 20 points of the query's budget — on the page, it could get
+   * the page itself refused. A count refused or failed leaves the total unknown, silently.
+   */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `tab.id` and not `tab`, as for `load`.
+  const count = useCallback(async () => {
+    if (table === null || tab === null) return
+    const seq = ++countSeq.current
+    const id = tab.id
+    setCounting(true)
+    try {
+      const page = await api.list(table, { filter: effectiveFilter, limit: 1, count: true })
+      if (seq !== countSeq.current) return
+      patchView(id, { total: page.meta.count, totalCapped: page.meta.count_is_capped })
+    } catch {
+      // The total stays unknown: the page is what was asked for, and it is there.
+    } finally {
+      if (seq === countSeq.current) setCounting(false)
+    }
+  }, [table, tab?.id, effectiveFilter, patchView])
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: `tab.id` and not `tab` — the tab object is rebuilt on every view patch, and depending on it would refetch the page each time a column is dragged or pinned.
   const load = useCallback(
-    async (options: { count?: boolean; auto?: boolean } = {}) => {
+    async (options: { auto?: boolean } = {}) => {
       // A SQL view's tab holds a RESULT, not a page of a table: it reloads by reading the
       // view again.
       if (resultTab) return
@@ -419,24 +447,19 @@ export function Workspace({
           filter: effectiveFilter,
           limit: view.pageSize,
           after: view.cursors[view.cursors.length - 1],
-          count: options.count === true,
         })
         setRows(page.data as readonly Row[])
         setNextCursor(page.meta.next_cursor)
         setHasNextPage(page.meta.has_next_page)
-        if (options.count === true) {
-          patchView(tab.id, {
-            total: page.meta.count,
-            totalCapped: page.meta.count_is_capped,
-          })
-        }
+        // Counted once per filter; again after a write or a reload, which may change it —
+        // not on a move from page to page, which does not.
+        if (knownTotal.current === null || options.auto !== true) void count()
       } catch (e) {
         setError(messageFor(e))
         setRows([])
         setHasNextPage(false)
       } finally {
         setLoading(false)
-        setCounting(false)
       }
     },
     // `tab.id` rather than `tab`: the object is rebuilt on every view patch, and
@@ -450,7 +473,7 @@ export function Workspace({
       effectiveFilter,
       view.pageSize,
       view.cursors,
-      patchView,
+      count,
     ],
   )
 
@@ -2048,7 +2071,6 @@ export function Workspace({
                       totalCapped={isSql ? (sqlResult?.truncated ?? false) : view.totalCapped}
                       counting={counting}
                       loading={isSql ? running : loading}
-                      countable={!isSql}
                       onPageSize={(size) => patch({ pageSize: size, cursors: [] })}
                       onFirst={() => patch({ cursors: [] })}
                       onPrevious={() => patch({ cursors: view.cursors.slice(0, -1) })}
@@ -2057,10 +2079,6 @@ export function Workspace({
                         patch({ cursors: [...view.cursors, nextCursor] })
                       }}
                       onRefresh={() => (isSql ? void readSqlView() : void load())}
-                      onCount={() => {
-                        setCounting(true)
-                        void load({ count: true })
-                      }}
                       onExport={onExport}
                       // The whole view, not the page: the server reads every row this filter keeps.
                       exportView={
@@ -2432,6 +2450,6 @@ function Toolbar({
   )
 }
 
+export type { Row }
 /** Re-exported for the record panel, which renders the same values. */
 export { rawText }
-export type { Row }

@@ -1,15 +1,12 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import {
-  IdentifierInvalidError,
-  MAX_DERIVED_NAME_BYTES,
-  TENANT_ALPHABET,
-  TENANT_ID_DENYLIST,
   byteLength,
   checkConstraintName,
   composeSchemaName,
   distributeBudget,
   foreignKeyName,
+  IdentifierInvalidError,
   indexName,
   isAlphabetA,
   isAlphabetB,
@@ -17,6 +14,7 @@ import {
   isTenantId,
   linkColumnName,
   linkColumnNameFromLabel,
+  MAX_DERIVED_NAME_BYTES,
   parseSchemaName,
   primaryKeyName,
   qualify,
@@ -24,6 +22,8 @@ import {
   relegatedName,
   relegatedSchemaName,
   sequenceName,
+  TENANT_ALPHABET,
+  TENANT_ID_DENYLIST,
   triggerName,
   uniqueConstraintName,
 } from '../src/index.js'

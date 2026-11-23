@@ -1,23 +1,23 @@
 'use client'
 
+import { Check, ImageOff, Paperclip } from 'lucide-react'
+import type { CSSProperties, ReactNode } from 'react'
 import { AddressLink } from '@/components/app/address'
 import { FieldButton } from '@/components/app/field-button'
 import { FieldIcon } from '@/components/app/field-icon'
-import { type Row, display, rawText } from '@/components/app/grid/cell'
+import { display, type Row, rawText } from '@/components/app/grid/cell'
 import { longTextExcerpt, urlLabel } from '@/components/app/markdown-text'
 import { OptionBadge } from '@/components/app/option-badge'
-import { ChoiceChips, LinkChips, choicesOf, linksOf } from '@/components/app/pickers'
+import { ChoiceChips, choicesOf, LinkChips, linksOf } from '@/components/app/pickers'
 import { BarcodeValue, ComputedList, RatingStars, UserValue } from '@/components/app/value-widgets'
 import { Hint } from '@/components/ui/tooltip'
-import { type Field, type Member, fileHref, filesOf } from '@/lib/api/client'
+import { type Field, fileHref, filesOf, type Member } from '@/lib/api/client'
 import { parseTemplate } from '@/lib/card-template'
 import { shownField } from '@/lib/computed'
 import { formatOf } from '@/lib/format'
 import { $t, $tp } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { cn } from '@/lib/utils'
-import { Check, ImageOff, Paperclip } from 'lucide-react'
-import type { CSSProperties, ReactNode } from 'react'
 
 /**
  * A row as a card — what a kanban column, a calendar day and a timeline bar show.
@@ -262,6 +262,7 @@ export function RecordCard({
   readonly children?: ReactNode
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'color' | 'title'>) {
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: the role is button whenever the card opens something
     <div
       {...rest}
       // A card that opens nothing — a shared view's, read only — is no button.

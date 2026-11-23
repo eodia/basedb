@@ -1,7 +1,7 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * A row of tabs that never overflows its pane: it scrolls sideways (no visible scrollbar),
@@ -12,7 +12,10 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 export function TabRow({
   className,
   children,
-}: { readonly className?: string; readonly children: ReactNode }) {
+}: {
+  readonly className?: string
+  readonly children: ReactNode
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ left: false, right: false })
 

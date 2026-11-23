@@ -1,5 +1,7 @@
 'use client'
 
+import { CalendarDays, Clock } from 'lucide-react'
+import { type KeyboardEvent, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -19,8 +21,6 @@ import {
 import { $t } from '@/lib/i18n'
 import { dateFormat } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
-import { CalendarDays, Clock } from 'lucide-react'
-import { type KeyboardEvent, useRef, useState } from 'react'
 
 /**
  * A `date` or `datetime` field: typed, or picked from a calendar.

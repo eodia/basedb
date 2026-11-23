@@ -2050,11 +2050,6 @@ export default {
 		download: 'JSON downloaden',
 		downloadNote: 'Om het in je instantie te importeren, of om het aan te passen voordat je het voor de catalogus voorstelt.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Dashboard</strong> “{label}” — {blocks}',
-		blocks: {
-			one: '{n} blok',
-			other: '{n} blokken',
-		},
 		automation: '<strong>Automatisering</strong> “{label}”',
 		yes: 'Ja',
 		no: 'Nee',

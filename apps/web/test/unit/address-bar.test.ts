@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Place, addressOf, placeOf } from '../../src/lib/address-bar'
+import { addressOf, type Place, placeOf } from '../../src/lib/address-bar'
 
 const ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f'
 const OTHER = '9f8e7d6c-5b4a-4321-8fed-cba987654321'
@@ -37,15 +37,7 @@ const PLACES: ReadonlyArray<readonly [Place, string]> = [
   [{ kind: 'section', base: CRM, section: 'history' }, '/bases/crm/historique'],
   [{ kind: 'section', base: CRM, section: 'integrations' }, '/bases/crm/integrations'],
   [{ kind: 'section', base: CRM, section: 'doc' }, '/bases/crm/documentation'],
-  [{ kind: 'dashboards', base: CRM, focus: null }, '/bases/crm/tableaux-de-bord'],
-  [
-    { kind: 'dashboards', base: CRM, focus: { kind: 'dashboard', id: ID } },
-    `/bases/crm/tableaux-de-bord/${ID}`,
-  ],
-  [
-    { kind: 'dashboards', base: CRM, focus: { kind: 'question', id: ID } },
-    `/bases/crm/tableaux-de-bord/questions/${ID}`,
-  ],
+  [{ kind: 'section', base: CRM, section: 'dashboards' }, '/bases/crm/tableaux-de-bord'],
   [{ kind: 'automations', base: CRM, automation: null }, '/bases/crm/automatisations'],
   [{ kind: 'automations', base: CRM, automation: ID }, `/bases/crm/automatisations/${ID}`],
   [{ kind: 'admin', tab: 'groupes' }, '/administration/groupes'],
@@ -71,6 +63,17 @@ describe('placeOf', () => {
 
   it('opens, as the SQL question it became, the address of a saved query', () => {
     expect(placeOf(`/bases/crm/requetes/${ID}`, '', TENANT)).toEqual({
+      kind: 'question',
+      base: CRM,
+      id: ID,
+    })
+  })
+
+  it('leads the addresses of the former dashboards to the dashboards, of their questions to the question', () => {
+    const dashboards = { kind: 'section', base: CRM, section: 'dashboards' }
+    expect(placeOf(`/bases/crm/tableaux-de-bord/${ID}`, '', TENANT)).toEqual(dashboards)
+    expect(placeOf('/bases/crm/analyses', '', TENANT)).toEqual(dashboards)
+    expect(placeOf(`/bases/crm/tableaux-de-bord/questions/${ID}`, '', TENANT)).toEqual({
       kind: 'question',
       base: CRM,
       id: ID,

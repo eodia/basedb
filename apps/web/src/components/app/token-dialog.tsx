@@ -1,5 +1,7 @@
 'use client'
 
+import { KeyRound, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { CodeGroup } from '@/components/api-reference/code-block'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,19 +27,17 @@ import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
   type ApiToken,
+  api,
   type BaseEnvironment,
   type DescribedBase,
+  mcpEndpoint,
+  restRoot,
   type TokenAccess,
   type TokenEnvironments,
   type TokenSurface,
-  api,
-  mcpEndpoint,
-  restRoot,
 } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { KeyRound, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Integration tokens of a base — chapter 08 §11, chapter 09 §9.

@@ -1,5 +1,7 @@
 'use client'
 
+import { Check, Key, Link2, Pencil, Plus, Sparkles, Table2, Tag, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AiDraft,
   AiFieldForm,
@@ -13,17 +15,17 @@ import {
   sameAi,
 } from '@/components/app/ai-field'
 import {
+  emptyRollup,
   FormulaEditor,
+  pathsOf,
   type RollupDraft,
   RollupForm,
-  emptyRollup,
-  pathsOf,
   rollupInputOf,
   rollupReady,
 } from '@/components/app/computed-field-form'
 import {
-  DefaultValueEditor,
   acceptsDefault,
+  DefaultValueEditor,
   defaultReady,
   sameDefault,
 } from '@/components/app/default-value'
@@ -38,8 +40,8 @@ import {
 } from '@/components/app/description'
 import { EditTableDialog } from '@/components/app/edit-table-dialog'
 import {
-  FORMAT_LABELS,
   FieldIcon,
+  FORMAT_LABELS,
   KIND_LABELS,
   KindLabel,
   shownFormat,
@@ -75,23 +77,21 @@ import {
   type AiFieldInput,
   type AiFieldStatus,
   type AutomationHttpMethod,
+  api,
   type DescribedBase,
   type Field,
   type FieldDefault,
   type FieldDeletionPreview,
   type FieldOptionInput,
   type Table,
-  api,
 } from '@/lib/api/client'
 import { describeComputed } from '@/lib/computed'
-import { CURRENCIES, type FormatInput, PRESETS, formatOf, formatsFor } from '@/lib/format'
+import { CURRENCIES, type FormatInput, formatOf, formatsFor, PRESETS } from '@/lib/format'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
+import { draftsOf, emptyDraft, type OptionDraft, optionsOf } from '@/lib/options'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import { Check, Key, Link2, Pencil, Plus, Sparkles, Table2, Tag, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The schema editor — chapter 11 §6.
@@ -260,8 +260,8 @@ export function SchemaEditor({
       )}
 
       <div className="flex gap-6">
-        {/* Tables */}
-        <div className="w-56 shrink-0 space-y-0.5">
+        {/* Tables: in view while the fields scroll, scrolling on their own when they outgrow it. */}
+        <div className="sticky top-0 max-h-[calc(100dvh-8rem)] w-56 shrink-0 space-y-0.5 self-start overflow-y-auto scroll-discret">
           {base.tables.map((t) => (
             <button
               key={t.id}

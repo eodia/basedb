@@ -1,29 +1,5 @@
 'use client'
 
-import type { Row } from '@/components/app/grid/cell'
-import { CardFields, colorOf, titleOf } from '@/components/app/views/card'
-import { Unavailable } from '@/components/app/views/kanban-view'
-import { loadRows } from '@/components/app/views/load'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { type Field, type Table, api } from '@/lib/api/client'
-import { $t, intlLocale, weekdayNames } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { weekStart } from '@/lib/preferences'
-import { cn } from '@/lib/utils'
-import {
-  type CalendarSpec,
-  addDays,
-  andFilter,
-  daysBetween,
-  localDateOf,
-  pick,
-  rangeClause,
-  startOfDay,
-  startOfWeek,
-  storedOfDate,
-  titleFieldOf,
-} from '@/lib/views'
 import {
   DndContext,
   type DragEndEvent,
@@ -35,6 +11,30 @@ import {
 } from '@dnd-kit/core'
 import { CalendarX2, ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react'
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
+import type { Row } from '@/components/app/grid/cell'
+import { CardFields, colorOf, titleOf } from '@/components/app/views/card'
+import { Unavailable } from '@/components/app/views/kanban-view'
+import { loadRows } from '@/components/app/views/load'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { api, type Field, type Table } from '@/lib/api/client'
+import { $t, intlLocale, weekdayNames } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { weekStart } from '@/lib/preferences'
+import { cn } from '@/lib/utils'
+import {
+  addDays,
+  andFilter,
+  type CalendarSpec,
+  daysBetween,
+  localDateOf,
+  pick,
+  rangeClause,
+  startOfDay,
+  startOfWeek,
+  storedOfDate,
+  titleFieldOf,
+} from '@/lib/views'
 
 /**
  * The calendar — each row on its date, a month or a week at a time (ch. 11 §1.4).
@@ -468,11 +468,11 @@ function EventChip({
           borderLeftColor: color,
         }
   return (
+    // biome-ignore lint/a11y/useSemanticElements: in the week view the chip holds the card's list of values, which a <button> may not contain
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      // biome-ignore lint/a11y/useSemanticElements: in the week view the chip holds the card's list of values, which a <button> may not contain
       role="button"
       tabIndex={0}
       onClick={onOpen}

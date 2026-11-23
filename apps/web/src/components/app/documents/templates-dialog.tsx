@@ -1,35 +1,35 @@
 'use client'
 
+import { arrayMove } from '@dnd-kit/sortable'
+import { FileText, LayoutTemplate, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  api,
   type DocumentBlock,
   type DocumentSpec,
   type DocumentTemplate,
   type Table,
-  api,
 } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { arrayMove } from '@dnd-kit/sortable'
-import { FileText, LayoutTemplate, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BlockPicker } from './block-picker'
 import { BlockList } from './blocks'
 import {
   type BlockKind,
-  MAX_BLOCKS,
   complete,
   countBlocks,
+  MAX_BLOCKS,
   newBlock,
   sendable,
   sourcesOf,
 } from './model'
 import { HeaderFooterPanel, StylePanel } from './panels'
-import { type PresetId, buildPreset, presets } from './presets'
+import { buildPreset, type PresetId, presets } from './presets'
 
 /**
  * The document templates of a table — chapter 21. The templates on the left; the one

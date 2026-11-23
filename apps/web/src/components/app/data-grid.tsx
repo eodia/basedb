@@ -1,5 +1,7 @@
 'use client'
 
+import { ExternalLink, Link2, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,8 +23,6 @@ import { Hint } from '@/components/ui/tooltip'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Link2, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
-import { useCallback, useState } from 'react'
 
 /**
  * The grid — chapter 11 §1 and §2.

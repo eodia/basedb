@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { LookButton, type LookValue, lookOf } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,6 @@ import {
 import { Input } from '@/components/ui/input'
 import type { DescribedBase } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import { useEffect, useState } from 'react'
 
 /**
  * Names a table, says what it is for and how it looks — its first column is added, and the

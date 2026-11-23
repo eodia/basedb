@@ -1,5 +1,7 @@
 'use client'
 
+import { Layers, Loader2, Plus, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,15 +11,13 @@ import { Label } from '@/components/ui/label'
 import { Hint } from '@/components/ui/tooltip'
 import {
   type ApplyReport,
+  api,
   type EnvironmentFamily,
   type EnvironmentSummary,
-  api,
 } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Layers, Loader2, Plus, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The environments of a base, in its form — chapter 14.

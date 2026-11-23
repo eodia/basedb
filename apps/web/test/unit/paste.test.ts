@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  type Directories,
   bulkWritable,
   clipboardText,
   compatible,
   convertPasted,
+  type Directories,
   editMode,
   enterFound,
   formatClipboard,

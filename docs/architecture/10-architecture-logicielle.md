@@ -8,6 +8,8 @@ Un principe gouverne l'ensemble : **une règle d'architecture qui n'est pas exé
 
 Un second principe, opérationnel : **tout ce qui attend doit avoir une borne.** Attente de verrou, acquisition de connexion, requête, opération complète, file : chacune porte ici un chiffre, dérivé d'un autre plutôt que saisi deux fois.
 
+> **Depuis la bascule vers Rust (0.8).** Le serveur — API REST, serveur MCP, tâches de fond et service de l'interface exportée — est un seul binaire, `basedb-server`, écrit en Rust dans `rust-server/` : une crate par domaine (`contracts`, `base`, `catalog`, `records`, `admin`, `automations`, `ai`, `mcp`, `web`, `server`), décrites dans `rust-server/README.md` et `rust-server/NOTES.md`. Les paquets TypeScript du serveur que ce chapitre nomme — `@basedb/core`, `@basedb/http`, `apps/api`, `apps/mcp`, Hono — ont été retirés ; les règles qu'il fixe (frontières du noyau, pools et rôles, bornes, transactions, ordonnanceur, démarrage) sont reprises par les crates, et la forme TypeScript d'origine reste lisible dans l'historique (`git show ecd79ee:packages/core`). Node ne sert plus qu'à construire : l'interface (`apps/web`, exportée en fichiers statiques), `@basedb/contracts` et `@basedb/naming` (dont `rust-server/tools/gen-contracts.mjs` engendre les tables du serveur), le SDK, les nœuds n8n, les modèles, le site et l'outillage.
+
 ---
 
 ## 1. Monorepo : paquets, responsabilités, dépendances
@@ -640,7 +642,7 @@ Le §10 exclut toute métrique au-delà du journal structuré. La contrepartie e
 
 ### 9.1 Hypothèses d'environnement
 
-**PostgreSQL 16 ou plus** (A1), une base d'accueil à l'encodage `UTF8` dont le rôle connecté est propriétaire. Node 22 LTS, `TZ=UTC`, système de fichiers sans état. Aucun privilège d'instance, aucun `CREATE DATABASE`, aucun superutilisateur, aucune écriture dans `postgresql.conf`.
+**PostgreSQL 16 ou plus** (A1), une base d'accueil à l'encodage `UTF8` dont le rôle connecté est propriétaire. Le binaire `basedb-server` (Linux glibc — Debian bookworm dans l'image —, Windows ou macOS en développement), `TZ=UTC`, système de fichiers sans état. Aucun privilège d'instance, aucun `CREATE DATABASE`, aucun superutilisateur, aucune écriture dans `postgresql.conf`.
 
 **Liste close des prérequis de base de données**, vérifiée au démarrage, sans chemin de repli :
 

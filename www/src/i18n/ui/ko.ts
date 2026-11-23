@@ -2033,11 +2033,6 @@ export default {
 		download: 'JSON 다운로드',
 		downloadNote: '인스턴스로 가져오거나, 카탈로그에 제안하기 전에 수정할 때 사용하세요.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>대시보드</strong> “{label}” — {blocks}',
-		blocks: {
-			one: '블록 {n}개',
-			other: '블록 {n}개',
-		},
 		automation: '<strong>자동화</strong> “{label}”',
 		yes: '예',
 		no: '아니요',

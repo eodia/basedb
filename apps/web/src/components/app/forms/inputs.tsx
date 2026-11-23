@@ -1,12 +1,12 @@
 'use client'
 
+import type { QuizAnswer } from '@basedb/contracts'
+import { Check, Star, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { Field } from '@/lib/api/client'
 import { editText, parseNumberInput } from '@/lib/format'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { QuizAnswer } from '@basedb/contracts'
-import { Check, Star, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import { type AnswerWidget, choiceKey, normalizeUrl, yesNoKeys } from './answers'
 
 /**
@@ -249,6 +249,7 @@ function OptionCard({
   readonly locked?: boolean
 }) {
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the role is radio or checkbox, both of which take aria-checked
     <button
       type="button"
       role={role}
@@ -383,12 +384,8 @@ export function ChoicesAnswer({ field, value, onChange, large, locked, correct }
   return (
     <div className="max-w-xl">
       <p className="mb-2.5 text-sm text-(--fm-muted)">{$t('Plusieurs réponses possibles')}</p>
-      <div
-        // biome-ignore lint/a11y/useSemanticElements: a <fieldset> would draw a frame and a legend the question already is
-        role="group"
-        aria-label={field.label}
-        className="flex flex-col gap-2"
-      >
+      {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> would draw a frame and a legend the question already is */}
+      <div role="group" aria-label={field.label} className="flex flex-col gap-2">
         {options.map((o, i) => (
           <OptionCard
             key={o.value}
@@ -491,10 +488,10 @@ export function RatingAnswer({ field, value, onChange, large, onDone, locked }: 
         const n = i + 1
         const on = n <= lit
         return (
+          // biome-ignore lint/a11y/useSemanticElements: answer cards with a key and a check, the ARIA radio pattern — a native input cannot hold them
           <button
             key={n}
             type="button"
-            // biome-ignore lint/a11y/useSemanticElements: answer cards with a key and a check, the ARIA radio pattern — a native input cannot hold them
             role="radio"
             aria-checked={current === n}
             aria-label={$t('{value} sur {max}', { value: n, max })}

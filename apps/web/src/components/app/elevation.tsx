@@ -1,5 +1,7 @@
 'use client'
 
+import { ShieldCheck } from 'lucide-react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,8 +16,6 @@ import { Label } from '@/components/ui/label'
 import { ApiError, api } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { ShieldCheck } from 'lucide-react'
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
 
 /**
  * Elevation, asked for WHEN it is needed — chapter 05 §2.2.

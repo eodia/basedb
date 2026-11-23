@@ -1,12 +1,12 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { create } from 'zustand'
 import { EditTableDialog } from '@/components/app/edit-table-dialog'
 import { ImportDialog } from '@/components/app/import-dialog'
 import { DeleteTableDialog } from '@/components/app/schema-editor'
 import type { DescribedBase, Table } from '@/lib/api/client'
 import { useWorkspace } from '@/lib/store/workspace'
-import { useEffect, useState } from 'react'
-import { create } from 'zustand'
 
 /**
  * What can be done to a table from wherever it is shown: import a file into it, edit its

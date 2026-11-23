@@ -1,13 +1,13 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import {
-  BUDGETS,
-  type SlugNature,
   applyNameRestrictions,
+  BUDGETS,
   budgetForNature,
   byteLength,
   isAlphabetA,
   isReservedForScope,
+  type SlugNature,
   slugify,
 } from '../src/index.js'
 

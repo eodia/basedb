@@ -2061,11 +2061,6 @@ export default {
 		download: 'Lataa JSON',
 		downloadNote: 'Tuodaksesi sen instanssiisi tai muokataksesi sitä ennen kuin ehdotat sitä katalogiin.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Koontinäyttö</strong> ”{label}” – {blocks}',
-		blocks: {
-			one: '{n} lohko',
-			other: '{n} lohkoa',
-		},
 		automation: '<strong>Automaatio</strong> ”{label}”',
 		yes: 'Kyllä',
 		no: 'Ei',

@@ -34,6 +34,7 @@ export function Brand({
   readonly className?: string
 }) {
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the label is set only with the img role, when the name is not written out
     <span
       className={cn('inline-flex shrink-0 items-center gap-2.5 leading-none', className)}
       role={compact ? 'img' : undefined}

@@ -1,10 +1,10 @@
 'use client'
 
+import { Check, ChevronDownIcon, LoaderCircle, Search } from 'lucide-react'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Check, ChevronDownIcon, LoaderCircle, Search } from 'lucide-react'
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 export interface ComboboxOption {
   readonly value: string

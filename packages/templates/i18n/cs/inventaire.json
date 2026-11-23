@@ -74,13 +74,6 @@
   "Par catégorie": "Podle kategorie",
   "Journal": "Deník",
   "Calendrier": "Kalendář",
-  "Stocks": "Zásoby",
-  "Articles à commander": "Položky k objednání",
-  "Articles suivis": "Sledované položky",
-  "Sorties ce mois-ci": "Výdeje tento měsíc",
-  "Articles par catégorie": "Položky podle kategorie",
-  "Mouvements par type": "Pohyby podle typu",
-  "Derniers mouvements": "Poslední pohyby",
   "Grosse sortie": "Velký výdej",
   "Prévient quand une sortie dépasse 50 unités.": "Upozorní, když výdej přesáhne 50 jednotek.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Velký výdej: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Vzorce",
   "Galerie": "Galerie",
   "IA": "AI",
+  "Stocks": "Zásoby",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Položky skladem, jejich dodavatelé a příjmy a výdeje."
 }

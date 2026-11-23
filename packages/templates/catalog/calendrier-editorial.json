@@ -247,53 +247,6 @@
       "spec": { "start_field": "Début", "end_field": "Fin", "scale": "week" }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Production",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "À publier ce mois-ci",
-          "table": "contenus",
-          "aggregate": "count",
-          "filter": "[Statut] ne \"Publié\""
-        },
-        {
-          "kind": "number",
-          "title": "Publiés",
-          "table": "contenus",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"Publié\""
-        },
-        { "kind": "number", "title": "Campagnes", "table": "campagnes", "aggregate": "count" },
-        {
-          "kind": "chart",
-          "title": "Par format",
-          "table": "contenus",
-          "group_by": "Format",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Par statut",
-          "table": "contenus",
-          "group_by": "Statut",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Prochaines parutions",
-          "table": "contenus",
-          "fields": ["Titre", "Format", "Publication"],
-          "filter": "[Statut] ne \"Publié\"",
-          "sort": "Publication",
-          "limit": 6,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Contenu publié",

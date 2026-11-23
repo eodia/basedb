@@ -1,5 +1,16 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { ChevronRight, Loader2 } from 'lucide-react'
+import { type ReactNode, useMemo, useState } from 'react'
 import type { Row } from '@/components/app/grid/cell'
 import { OptionBadge } from '@/components/app/option-badge'
 import { UserValue } from '@/components/app/value-widgets'
@@ -11,17 +22,6 @@ import type { Field, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { type ListSpec, nextHandOrder, orderByHand, pick, titleFieldOf } from '@/lib/views'
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { ChevronRight, Loader2 } from 'lucide-react'
-import { type ReactNode, useMemo, useState } from 'react'
 
 /**
  * The list — one line per row, grouped under titles (ch. 11 §1.6): the title, then the

@@ -1,13 +1,13 @@
 'use client'
 
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  api,
   type PointerAt,
   type RemotePointer,
-  type Viewer,
-  api,
   streamEvents,
+  type Viewer,
 } from '@/lib/api/client'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** A pointer is sent at most this often; the last position always goes. */
 const POINTER_EVERY_MS = 120

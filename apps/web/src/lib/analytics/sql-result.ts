@@ -1,5 +1,5 @@
-import type { SqlResult } from '@/lib/api/client'
 import { type QueryResult, type ResultColumn, sqlColumnType } from '@basedb/contracts'
+import type { SqlResult } from '@/lib/api/client'
 
 /**
  * What a statement run in the console gives, read as the result of a question — chapter 11

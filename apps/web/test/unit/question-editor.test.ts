@@ -7,9 +7,9 @@ import {
   defaultFields,
   drillRows,
   joinAlias,
+  joinable,
   joinSentence,
   joinSuggestions,
-  joinable,
   pruneJoins,
   reachableColumns,
   settleQuery,
@@ -188,7 +188,7 @@ describe('the columns a question can cite', () => {
     )
   })
 
-  it('stay those of the joins already in the query for what a dashboard maps its filters to', () => {
+  it('stay those of the joins already in the query for what a filter is tied to', () => {
     expect(columnsOf(base, projets).every((c) => c.join === undefined)).toBe(true)
   })
 })

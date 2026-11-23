@@ -1,50 +1,16 @@
 'use client'
 
-import { ColumnList } from '@/components/app/analytics/column-picker'
-import {
-  ExpressionFilterEditor,
-  FilterEditor,
-  useValueLabel,
-} from '@/components/app/analytics/filter-editor'
-import { JoinEditor } from '@/components/app/analytics/join-editor'
-import { JoinGlyph } from '@/components/app/analytics/join-glyph'
-import { TableColumns } from '@/components/app/analytics/table-columns'
-import { TableList } from '@/components/app/analytics/table-picker'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Hint } from '@/components/ui/tooltip'
-import {
-  type ColumnOption,
-  FN_LABELS,
-  aggregationsFor,
-  breakoutOn,
-  columnsOf,
-  compactQuery,
-  describeAggregation,
-  describeBreakout,
-  describeFilter,
-  findColumn,
-  groupable,
-  reachableColumns,
-  settleQuery,
-  tableOf,
-  withJoinFor,
-  withoutJoin,
-} from '@/lib/analytics/model'
-import type { DescribedBase, Table } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
   type Aggregation,
   type AggregationFn,
   type Breakout,
   type BuilderQuery,
   COLUMNLESS_FNS,
+  columnName,
   type Filter,
   type Join,
   type OrderBy,
   QUERY_LIMITS,
-  columnName,
 } from '@basedb/contracts'
 import {
   ArrowDownAZ,
@@ -60,6 +26,40 @@ import {
   X,
 } from 'lucide-react'
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { ColumnList } from '@/components/app/analytics/column-picker'
+import {
+  ExpressionFilterEditor,
+  FilterEditor,
+  useValueLabel,
+} from '@/components/app/analytics/filter-editor'
+import { JoinEditor } from '@/components/app/analytics/join-editor'
+import { JoinGlyph } from '@/components/app/analytics/join-glyph'
+import { TableColumns } from '@/components/app/analytics/table-columns'
+import { TableList } from '@/components/app/analytics/table-picker'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
+import {
+  aggregationsFor,
+  breakoutOn,
+  type ColumnOption,
+  columnsOf,
+  compactQuery,
+  describeAggregation,
+  describeBreakout,
+  describeFilter,
+  FN_LABELS,
+  findColumn,
+  groupable,
+  reachableColumns,
+  settleQuery,
+  tableOf,
+  withJoinFor,
+  withoutJoin,
+} from '@/lib/analytics/model'
+import type { DescribedBase, Table } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * The notebook of a question — chapter 18 §3, with the mouse: the data and the tables joined

@@ -1,0 +1,37 @@
+[package]
+name = "basedb-records"
+description = "Les enregistrements : lecture, écriture, filtres, lots, historique, fichiers, exports."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "basedb_records"
+
+[dependencies]
+basedb_contracts.workspace = true
+basedb_base.workspace = true
+basedb_catalog.workspace = true
+axum.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio-postgres.workspace = true
+chrono.workspace = true
+regex.workspace = true
+sha2.workspace = true
+hmac.workspace = true
+uuid.workspace = true
+indexmap.workspace = true
+bytes.workspace = true
+postgres-types.workspace = true
+form_urlencoded.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+url.workspace = true
+unicode-normalization.workspace = true
+aes-gcm = "0.10"
+postgres-protocol = "0.6"
+fallible-iterator = "0.2"
+chrono-tz = "0.10"
+flate2 = "1"

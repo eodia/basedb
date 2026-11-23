@@ -29,8 +29,6 @@ export const TEMPLATE_LIMITS = {
   rowsPerTable: 200,
   rows: 2000,
   views: 20,
-  dashboards: 5,
-  blocks: 12,
   automations: 20,
   actions: 10,
   label: 80,
@@ -252,44 +250,6 @@ export interface TemplateView {
   readonly spec: Readonly<Record<string, unknown>>
 }
 
-export type TemplateBlock =
-  | {
-      readonly kind: 'number'
-      readonly title: string
-      readonly width: number
-      readonly table: string
-      readonly aggregate: Aggregate
-      readonly field: string | null
-      readonly filter: string
-    }
-  | {
-      readonly kind: 'chart'
-      readonly title: string
-      readonly width: number
-      readonly table: string
-      readonly group_by: string
-      readonly filter: string
-      readonly style: 'bar' | 'pie'
-    }
-  | {
-      readonly kind: 'list'
-      readonly title: string
-      readonly width: number
-      readonly table: string
-      readonly fields: readonly string[]
-      readonly filter: string
-      /** A field label, `-` in front for the descending order; empty: the table's order. */
-      readonly sort: string
-      readonly limit: number
-    }
-  | { readonly kind: 'text'; readonly title: string; readonly width: number; readonly body: string }
-
-export interface TemplateDashboard {
-  readonly label: string
-  readonly description?: string
-  readonly blocks: readonly TemplateBlock[]
-}
-
 export type TemplateAction =
   | {
       readonly kind: 'update_record'
@@ -344,7 +304,6 @@ export interface Template {
   readonly links: readonly TemplateLink[]
   readonly rows: Readonly<Record<string, readonly TemplateRow[]>>
   readonly views: readonly TemplateView[]
-  readonly dashboards: readonly TemplateDashboard[]
   readonly automations: readonly TemplateAutomation[]
 }
 
@@ -371,7 +330,6 @@ export interface TemplateSummary {
     readonly fields: number
     readonly rows: number
     readonly views: number
-    readonly dashboards: number
     readonly automations: number
     readonly ai_fields: number
   }
@@ -1045,16 +1003,11 @@ export function checkTemplate(
     })
   }
 
-  // ── Views, dashboards, automations ──
+  // ── Views, automations ──
   const views: TemplateView[] = []
   c.list(raw, 'views', '', TEMPLATE_LIMITS.views).forEach((rv, vi) => {
     const view = checkView(c, rv, `views[${vi}]`, known, views)
     if (view !== null) views.push(view)
-  })
-  const dashboards: TemplateDashboard[] = []
-  c.list(raw, 'dashboards', '', TEMPLATE_LIMITS.dashboards).forEach((rd, di) => {
-    const dashboard = checkDashboard(c, rd, `dashboards[${di}]`, known)
-    if (dashboard !== null) dashboards.push(dashboard)
   })
   const automations: TemplateAutomation[] = []
   c.list(raw, 'automations', '', TEMPLATE_LIMITS.automations).forEach((ra, ai) => {
@@ -1098,7 +1051,6 @@ export function checkTemplate(
     links,
     rows,
     views,
-    dashboards,
     automations,
   }
   return { ok: true, template, issues: c.issues }
@@ -1755,115 +1707,6 @@ function checkView(
   }
 }
 
-function checkDashboard(
-  c: Checker,
-  rd: unknown,
-  path: string,
-  known: ReadonlyMap<string, Known>,
-): TemplateDashboard | null {
-  if (!isRecord(rd)) {
-    c.say(path, 'objet attendu')
-    return null
-  }
-  const label = c.text(rd, 'label', path, TEMPLATE_LIMITS.label, true)
-  if (label === null) return null
-  const blocks: TemplateBlock[] = []
-  c.list(rd, 'blocks', path, TEMPLATE_LIMITS.blocks).forEach((rb, bi) => {
-    const where = `${path}.blocks[${bi}]`
-    if (!isRecord(rb)) {
-      c.say(where, 'objet attendu')
-      return
-    }
-    const title = c.text(rb, 'title', where, TEMPLATE_LIMITS.label) ?? ''
-    const width = typeof rb.width === 'number' && [1, 2, 3].includes(rb.width) ? rb.width : 1
-    if (rb.kind === 'text') {
-      blocks.push({
-        kind: 'text',
-        title,
-        width,
-        body: c.text(rb, 'body', where, TEMPLATE_LIMITS.text) ?? '',
-      })
-      return
-    }
-    if (rb.kind === 'embed') {
-      c.say(where, 'un modèle ne porte pas de page extérieure')
-      return
-    }
-    const tableKey = c.text(rb, 'table', where, 64, true)
-    const self = tableKey === null ? undefined : known.get(tableKey)
-    if (tableKey === null || self === undefined) {
-      if (tableKey !== null) c.say(`${where}.table`, `table « ${tableKey} » inconnue`)
-      return
-    }
-    const fieldOf = (label: unknown, at: string) => {
-      const found = typeof label === 'string' ? self.fields.get(labelKey(label)) : undefined
-      if (found === undefined) c.say(at, `champ « ${String(label)} » inconnu`)
-      return found
-    }
-    const filter = typeof rb.filter === 'string' ? rb.filter : ''
-    if (filter !== '' && !checkFilter(c, filter, `${where}.filter`, self)) return
-    if (rb.kind === 'number') {
-      const aggregate = (AGGREGATES as readonly string[]).includes(String(rb.aggregate))
-        ? (rb.aggregate as Aggregate)
-        : 'count'
-      const field = aggregate === 'count' ? undefined : fieldOf(rb.field, `${where}.field`)
-      if (aggregate !== 'count' && field === undefined) return
-      if (field !== undefined && !summariesFor(field.kind).includes(aggregate)) {
-        c.say(`${where}.field`, `« ${field.label} » ne se calcule pas par « ${aggregate} »`)
-        return
-      }
-      blocks.push({
-        kind: 'number',
-        title,
-        width,
-        table: tableKey,
-        aggregate,
-        field: field?.label ?? null,
-        filter,
-      })
-    } else if (rb.kind === 'chart') {
-      const group = fieldOf(rb.group_by, `${where}.group_by`)
-      if (group === undefined) return
-      if (!GROUPABLE.includes(group.kind)) {
-        c.say(`${where}.group_by`, `« ${group.label} » ne se groupe pas`)
-        return
-      }
-      blocks.push({
-        kind: 'chart',
-        title,
-        width,
-        table: tableKey,
-        group_by: group.label,
-        filter,
-        style: rb.style === 'pie' ? 'pie' : 'bar',
-      })
-    } else if (rb.kind === 'list') {
-      const fields = (Array.isArray(rb.fields) ? rb.fields : [])
-        .map((f, i) => fieldOf(f, `${where}.fields[${i}]`)?.label)
-        .filter((f): f is string => f !== undefined)
-      let sort = typeof rb.sort === 'string' ? rb.sort.trim() : ''
-      if (sort !== '') {
-        const descending = sort.startsWith('-')
-        const found = fieldOf(descending ? sort.slice(1) : sort, `${where}.sort`)
-        sort = found === undefined ? '' : `${descending ? '-' : ''}${found.label}`
-      }
-      const limit =
-        typeof rb.limit === 'number' && Number.isInteger(rb.limit)
-          ? Math.min(Math.max(rb.limit, 1), 50)
-          : 5
-      blocks.push({ kind: 'list', title, width, table: tableKey, fields, filter, sort, limit })
-    } else {
-      c.say(`${where}.kind`, `bloc « ${String(rb.kind)} » inconnu`)
-    }
-  })
-  if (blocks.length === 0) {
-    c.say(`${path}.blocks`, 'au moins un bloc')
-    return null
-  }
-  const description = c.text(rd, 'description', path, TEMPLATE_LIMITS.description)
-  return { label, ...(description === undefined ? {} : { description }), blocks }
-}
-
 function checkAutomation(
   c: Checker,
   ra: unknown,
@@ -2039,7 +1882,6 @@ export function summarizeTemplate(template: Template): TemplateSummary {
       fields,
       rows: Object.values(template.rows).reduce((n, rows) => n + rows.length, 0),
       views: template.views.length,
-      dashboards: template.dashboards.length,
       automations: template.automations.length,
       ai_fields: template.tables.reduce(
         (n, t) => n + t.fields.filter((f) => f.ai !== undefined).length,

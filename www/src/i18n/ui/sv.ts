@@ -2050,11 +2050,6 @@ export default {
 		download: 'Ladda ned JSON-filen',
 		downloadNote: 'För att importera den till din instans, eller anpassa den innan du föreslår den för katalogen.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Instrumentpanel</strong> ”{label}” – {blocks}',
-		blocks: {
-			one: '{n} block',
-			other: '{n} block',
-		},
 		automation: '<strong>Automatisering</strong> ”{label}”',
 		yes: 'Ja',
 		no: 'Nej',

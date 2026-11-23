@@ -1,6 +1,6 @@
 import { crc32, deflateRawSync } from 'node:zlib'
-import { readWorkbook, serialToIso } from '@/lib/xlsx'
 import { describe, expect, it } from 'vitest'
+import { readWorkbook, serialToIso } from '@/lib/xlsx'
 
 /**
  * Reading an Excel workbook: a zip of XML parts, built here by hand — the texts in the

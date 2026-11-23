@@ -69,7 +69,7 @@ docker run -d --name basedb -p 3000:3000 -v basedb-files:/data \
 
 ```bash
 corepack pnpm install
-corepack pnpm exec tsc -b packages/naming packages/contracts packages/catalog-schema packages/core apps/api apps/mcp
+corepack pnpm exec tsc -b packages/naming packages/contracts
 corepack pnpm start
 ```
 

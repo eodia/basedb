@@ -74,13 +74,6 @@
   "Par catégorie": "Luokittain",
   "Journal": "Loki",
   "Calendrier": "Kalenteri",
-  "Stocks": "Varastot",
-  "Articles à commander": "Tilattavat tuotteet",
-  "Articles suivis": "Seurattavat tuotteet",
-  "Sorties ce mois-ci": "Lähdöt tässä kuussa",
-  "Articles par catégorie": "Tuotteet luokittain",
-  "Mouvements par type": "Tapahtumat tyypeittäin",
-  "Derniers mouvements": "Viimeisimmät tapahtumat",
   "Grosse sortie": "Suuri lähtö",
   "Prévient quand une sortie dépasse 50 unités.": "Ilmoittaa, kun lähtö ylittää 50 yksikköä.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Suuri lähtö: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Kaavat",
   "Galerie": "Galleria",
   "IA": "Tekoäly",
+  "Stocks": "Varastot",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Varastossa olevat tuotteet, niiden toimittajat sekä saapumiset ja lähdöt."
 }

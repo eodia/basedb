@@ -74,13 +74,6 @@
   "Par catégorie": "Kategória szerint",
   "Journal": "Napló",
   "Calendrier": "Naptár",
-  "Stocks": "Készletek",
-  "Articles à commander": "Rendelendő cikkek",
-  "Articles suivis": "Nyilvántartott cikkek",
-  "Sorties ce mois-ci": "E havi kivételezések",
-  "Articles par catégorie": "Cikkek kategória szerint",
-  "Mouvements par type": "Mozgások típus szerint",
-  "Derniers mouvements": "Legutóbbi mozgások",
   "Grosse sortie": "Nagy kivételezés",
   "Prévient quand une sortie dépasse 50 unités.": "Értesítést küld, ha egy kivételezés meghaladja az 50 egységet.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Nagy kivételezés: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Képletek",
   "Galerie": "Galéria",
   "IA": "MI",
+  "Stocks": "Készletek",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "A készleten lévő cikkek, beszállítóik, valamint a bevételezések és kivételezések."
 }

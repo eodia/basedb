@@ -115,14 +115,21 @@ Avec Docker, sur n’importe quel hôte — deux fichiers suffisent :
 mkdir basedb && cd basedb
 curl -fsSLO https://raw.githubusercontent.com/eodia/basedb/main/docker-compose.yml
 curl -fsSL https://raw.githubusercontent.com/eodia/basedb/main/.env.example -o .env
-# dans .env : POSTGRES_PASSWORD, et BASEDB_ENCRYPTION_KEY (openssl rand -base64 32)
 docker compose up -d
 ```
 
+Rien à remplir : les secrets — mot de passe de PostgreSQL, clé d’instance, ceux d’insights —
+sont tirés au premier démarrage et gardés dans le volume `secrets` ; une valeur donnée dans
+`.env` l’emporte. Gardez une copie de la clé d’instance à part des sauvegardes de la base :
+`docker compose exec basedb cat /run/basedb-secrets/BASEDB_ENCRYPTION_KEY`.
+
 basedb répond sur <http://localhost:3000> — l’interface, l’API sous `/api`, le serveur MCP
-sous `/mcp` —, publié sur `127.0.0.1` seulement. Une seule image,
+sous `/mcp`, et les tableaux de bord d’[insights](https://hub.docker.com/r/eodia/insights)
+sous `/insights` —, publié sur `127.0.0.1` seulement. L’image
 [`eodia/basedb`](https://hub.docker.com/r/eodia/basedb) (amd64 et arm64), à côté de
-PostgreSQL ; `docker compose --profile https up -d` avec `BASEDB_DOMAIN` la sert en HTTPS sur
+PostgreSQL, d’insights et de Trino, installés par défaut ; `BASEDB_INSIGHTS=0` laisse
+insights de côté, et l’interface cache alors ses tableaux de bord.
+`docker compose --profile https up -d` avec `BASEDB_DOMAIN` la sert en HTTPS sur
 votre domaine, derrière Caddy.
 
 La première page vous fait créer le **compte administrateur** — votre adresse, votre mot de
@@ -170,31 +177,34 @@ La documentation est écrite dans [`www/`](www/) (Astro et Starlight) ; chaque p
 
 ## Développer
 
-Prérequis : Node 22 ou plus, Docker, et `corepack enable`.
+Prérequis : Rust stable (`rustup`), Node 22 ou plus avec `corepack enable` — pour l’interface
+et l’outillage seulement —, et Docker. Sous Windows, la chaîne `stable-x86_64-pc-windows-msvc`
+(Visual Studio Build Tools) ou `stable-x86_64-pc-windows-gnu` avec MinGW-w64 dans le `PATH`
+(`rust-server/.cargo/config.toml`).
 
 ```bash
 corepack pnpm install
-corepack pnpm exec tsc -b apps/api apps/mcp   # le noyau et ses paquets suivent
-corepack pnpm start                           # PostgreSQL 16, API, MCP et interface, sur des ports libres
+corepack pnpm exec tsc -b packages/naming packages/contracts   # les paquets que lit l’interface
+corepack pnpm start       # PostgreSQL 16, basedb-server (API :8787, MCP :8788) et l’interface (:3200)
 ```
 
-`start` démarre un PostgreSQL jetable, applique le catalogue, amorce un administrateur et
-affiche ses identifiants ; `Ctrl+C` arrête tout, conteneur compris.
+`start` compile `basedb-server` avec cargo (`rust-server/`, profil debug ;
+`BASEDB_CARGO_PROFILE=release` pour l’optimisé), démarre un PostgreSQL jetable, applique le
+catalogue, amorce un administrateur et affiche ses identifiants ; `next dev` sert l’interface.
+`Ctrl+C` arrête tout, conteneur compris.
 
 ```bash
-corepack pnpm lint        # Biome
+corepack pnpm lint        # Biome, et les migrations du catalogue
 corepack pnpm typecheck
-corepack pnpm test:unit
-corepack pnpm test:int    # un vrai PostgreSQL 16 par Testcontainers
+corepack pnpm test:unit   # l’interface et les paquets TypeScript
+corepack pnpm test:server # le serveur : cargo test (un PostgreSQL dans DATABASE_URL pour les tests d’intégration)
 corepack pnpm graph       # les dépendances permises entre paquets
 ```
 
 | Dossier | Contenu |
 |---|---|
-| [`apps/web`](apps/web) | l’interface — Next.js |
-| [`apps/api`](apps/api) | l’API REST — Hono |
-| [`apps/mcp`](apps/mcp) | le serveur MCP et son relais stdio |
-| [`packages/core`](packages/core) | le noyau : catalogue, moteur de migrations, droits, enregistrements, historique, automatisations |
+| [`rust-server`](rust-server) | `basedb-server`, en Rust : l’API REST, le serveur MCP, les tâches de fond, et l’interface exportée — catalogue, migrations, droits, enregistrements, historique, automatisations, IA |
+| [`apps/web`](apps/web) | l’interface — Next.js, exportée en fichiers statiques que sert `basedb-server` |
 | [`packages/catalog-schema`](packages/catalog-schema) | le DDL du catalogue `_basedb`, extrait du document d’architecture |
 | [`packages/contracts`](packages/contracts) | le registre des codes d’erreur et les contrats partagés |
 | [`packages/naming`](packages/naming) | le nommage : du libellé « Échéance » au nom physique `echeance` |

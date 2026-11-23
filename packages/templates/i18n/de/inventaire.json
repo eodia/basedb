@@ -74,13 +74,6 @@
   "Par catégorie": "Nach Kategorie",
   "Journal": "Journal",
   "Calendrier": "Kalender",
-  "Stocks": "Bestände",
-  "Articles à commander": "Nachzubestellende Artikel",
-  "Articles suivis": "Erfasste Artikel",
-  "Sorties ce mois-ci": "Abgänge diesen Monat",
-  "Articles par catégorie": "Artikel nach Kategorie",
-  "Mouvements par type": "Bewegungen nach Typ",
-  "Derniers mouvements": "Letzte Bewegungen",
   "Grosse sortie": "Großer Abgang",
   "Prévient quand une sortie dépasse 50 unités.": "Benachrichtigt, wenn ein Abgang 50 Einheiten überschreitet.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Großer Abgang: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formeln",
   "Galerie": "Galerie",
   "IA": "KI",
+  "Stocks": "Bestände",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Die Artikel auf Lager, ihre Lieferanten und die Zu- und Abgänge."
 }

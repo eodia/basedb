@@ -1,17 +1,17 @@
 'use client'
 
+import { Check, Copy } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  type Token,
-  type TokenKind,
   highlight,
   labelFor,
+  type Token,
+  type TokenKind,
 } from '@/components/api-reference/highlight'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { $t } from '@/lib/i18n'
 import type { CodeBlock } from '@/lib/markdown'
 import { cn } from '@/lib/utils'
-import { Check, Copy } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * Fenced code, as the documentation shows it — chapter 08 §9.4.

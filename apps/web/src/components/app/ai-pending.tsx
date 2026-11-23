@@ -1,22 +1,22 @@
 'use client'
 
-import type { Row } from '@/components/app/grid/cell'
-import { Hint } from '@/components/ui/tooltip'
-import { type Field, type TableRef, api } from '@/lib/api/client'
-import { quoteLiteral } from '@/lib/expression'
-import { $t } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import { Loader2, Sparkles } from 'lucide-react'
 import {
+  createContext,
   type Dispatch,
   type SetStateAction,
-  createContext,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import type { Row } from '@/components/app/grid/cell'
+import { Hint } from '@/components/ui/tooltip'
+import { api, type Field, type TableRef } from '@/lib/api/client'
+import { quoteLiteral } from '@/lib/expression'
+import { $t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * Waiting for the AI worker — chapter 12 §1.5.

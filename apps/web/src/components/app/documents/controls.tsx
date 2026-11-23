@@ -1,11 +1,11 @@
 'use client'
 
+import { Check } from 'lucide-react'
+import { type ReactNode, useEffect, useId, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Check } from 'lucide-react'
-import { type ReactNode, useEffect, useId, useState } from 'react'
 
 /**
  * The small controls of the template editor: a choice among a few shown side by side, a
@@ -41,10 +41,10 @@ export function Segmented<T extends string | number>({
     >
       {options.map((o) => {
         const button = (
+          // biome-ignore lint/a11y/useSemanticElements: a segmented control, the ARIA radio pattern
           <button
             key={String(o.value)}
             type="button"
-            // biome-ignore lint/a11y/useSemanticElements: a segmented control, the ARIA radio pattern
             role="radio"
             aria-checked={value === o.value}
             aria-label={o.icon === undefined ? undefined : o.label}

@@ -163,6 +163,9 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   AI_PROVIDER_UNAVAILABLE: $t('Le fournisseur d’IA ne répond pas. Réessayez dans un instant.'),
   AI_RESPONSE_UNUSABLE: $t('Réponse de l’IA inutilisable. Reformulez la demande.'),
   AI_PAYLOAD_TOO_LARGE: $t('Cette base est trop grande pour tenir dans une demande.'),
+  AI_ATTACHMENT_UNREADABLE: $t(
+    'Cette pièce jointe n’a pas pu être lue : PDF, Excel, Word, PowerPoint, CSV ou texte.',
+  ),
 
   // Chapter 08 §11 — integration tokens.
   ELEVATION_REQUIRED: $t('Confirmez votre mot de passe pour faire cela.'),
@@ -188,6 +191,8 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   SYNC_SOURCE_FAILED: $t(
     'La source n’a pas pu être lue : elle est injoignable, trop grosse ou illisible.',
   ),
+  INSIGHTS_UNAVAILABLE: $t('insights n’est pas configuré ou ne répond pas.'),
+  INSIGHTS_REFUSED: $t('insights a refusé la demande.'),
 
   // Chapter 14 — environments.
   ENVIRONMENT_IS_PRODUCTION: $t(

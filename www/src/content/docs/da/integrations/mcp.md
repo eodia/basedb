@@ -41,7 +41,7 @@ En klient, der kun kan starte lokale programmer (stdio), går via repositoriets 
 tokenet fra den variabel, som `--token-env` angiver:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

@@ -2050,11 +2050,6 @@ export default {
 		download: 'Download the JSON',
 		downloadNote: 'To import it into your instance, or to adapt it before proposing it for the catalog.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Dashboard</strong> “{label}” — {blocks}',
-		blocks: {
-			one: '{n} block',
-			other: '{n} blocks',
-		},
 		automation: '<strong>Automation</strong> “{label}”',
 		yes: 'Yes',
 		no: 'No',

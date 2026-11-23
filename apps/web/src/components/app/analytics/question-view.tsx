@@ -1,50 +1,5 @@
 'use client'
 
-import { DrillMenu } from '@/components/app/analytics/drill-menu'
-import { Notebook } from '@/components/app/analytics/notebook'
-import { QuestionDialog } from '@/components/app/analytics/question-dialog'
-import {
-  SqlQuestionEditor,
-  testConstraints,
-  variablesOf,
-} from '@/components/app/analytics/sql-question'
-import { type DrillEvent, VisualizationView } from '@/components/app/analytics/visualization'
-import { VizPicker, VizSettings } from '@/components/app/analytics/viz-settings'
-import { SqlIllustration } from '@/components/app/sql-illustration'
-import { AUDIENCES, audienceIcon } from '@/components/app/sql/query-dialog'
-import { SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Label } from '@/components/ui/label'
-import { Pane } from '@/components/ui/pane'
-import { Segmented } from '@/components/ui/segmented'
-import { TabRow } from '@/components/ui/tab-row'
-import { Textarea } from '@/components/ui/textarea'
-import { Hint } from '@/components/ui/tooltip'
-import { toCsv } from '@/lib/analytics/format'
-import { autoVisualization, tableOf } from '@/lib/analytics/model'
-import { givenUpBySwitching, runsInConsole } from '@/lib/analytics/question-mode'
-import { queryResultOfSql, wroteData } from '@/lib/analytics/sql-result'
-import {
-  ApiError,
-  type DescribedBase,
-  type QueryAudience,
-  type Question,
-  type SqlView,
-  api,
-} from '@/lib/api/client'
-import { $t, $tp, intlLocale } from '@/lib/i18n'
-import { useMembers } from '@/lib/members'
-import { messageFor } from '@/lib/messages'
-import { weekStart } from '@/lib/preferences'
-import { type QuestionDraft, useWorkspace } from '@/lib/store/workspace'
-import { cn } from '@/lib/utils'
 import {
   type BuilderQuery,
   QUERY_LIMITS,
@@ -72,14 +27,52 @@ import {
   Workflow,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { DrillMenu } from '@/components/app/analytics/drill-menu'
+import { Notebook } from '@/components/app/analytics/notebook'
+import { QuestionDialog } from '@/components/app/analytics/question-dialog'
+import {
+  SqlQuestionEditor,
+  testConstraints,
+  variablesOf,
+} from '@/components/app/analytics/sql-question'
+import { type DrillEvent, VisualizationView } from '@/components/app/analytics/visualization'
+import { VizPicker, VizSettings } from '@/components/app/analytics/viz-settings'
+import { AUDIENCES, audienceIcon } from '@/components/app/sql/query-dialog'
+import { SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
+import { SqlIllustration } from '@/components/app/sql-illustration'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Label } from '@/components/ui/label'
+import { Pane } from '@/components/ui/pane'
+import { Segmented } from '@/components/ui/segmented'
+import { TabRow } from '@/components/ui/tab-row'
+import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
+import { toCsv } from '@/lib/analytics/format'
+import { autoVisualization, tableOf } from '@/lib/analytics/model'
+import { givenUpBySwitching, runsInConsole } from '@/lib/analytics/question-mode'
+import { queryResultOfSql, wroteData } from '@/lib/analytics/sql-result'
+import { ApiError, api, type DescribedBase, type Question, type SqlView } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { useMembers } from '@/lib/members'
+import { messageFor } from '@/lib/messages'
+import { weekStart } from '@/lib/preferences'
+import { type QuestionDraft, useWorkspace } from '@/lib/store/workspace'
+import { cn } from '@/lib/utils'
 
 /**
- * A question, opened — chapter 18 §1: among the dashboards, or in a tab of the workspace.
+ * A question, opened — chapter 18 §1, in a tab of the workspace.
  * Built with the mouse in its notebook or written in SQL — a switch in the header says which,
  * and one the editor cannot convert asks first; run with the rights of whoever looks, read
  * only; drawn the way it reads best, or the way its author chose; explored by a click on a
  * point, each step a question of its own that can be walked back. Anyone keeps their own;
- * whoever builds the base shares them, or puts them in a dashboard.
+ * whoever builds the base shares them.
  *
  * Three panes side by side, each as wide as the person drags it: the notebook on the left
  * (the question's steps), the result in the middle (the chart, or its data), the settings on
@@ -164,13 +157,10 @@ export function QuestionView({
   initial,
   question: savedQuestion = null,
   manages,
-  saveAudience = 'personal',
   onSaved,
   onDeleted,
   onBack,
   backLabel = $t('Retour'),
-  onUse,
-  useLabel = $t('Ajouter au tableau de bord'),
   onDraftChange,
   onOpenRows,
   onSqlViewSaved,
@@ -181,15 +171,10 @@ export function QuestionView({
   readonly question?: Question | null
   /** The caller manages the base's structure: they may share a question. */
   readonly manages: boolean
-  /** Who a new question is offered to when saved — the whole base, for a dashboard's. */
-  readonly saveAudience?: QueryAudience
   readonly onSaved?: (question: Question) => void
   readonly onDeleted?: () => void
   readonly onBack?: () => void
   readonly backLabel?: string
-  /** In a dashboard being edited: the question goes into it. */
-  readonly onUse?: (draft: QuestionDraft) => void
-  readonly useLabel?: string
   /** Each change of the draft — a tab keeps it for when it comes back. */
   readonly onDraftChange?: (draft: QuestionDraft) => void
   /**
@@ -531,15 +516,6 @@ export function QuestionView({
             <PanelRight className="size-4" />
           </Button>
         </Hint>
-        {onUse !== undefined && complete(query) && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUse({ ...draft, visualization: draft.visualization ?? visualization })}
-          >
-            {useLabel}
-          </Button>
-        )}
         {complete(query) && (draft.id === null || dirty || canMakeView) && (
           <div className="flex">
             <Button
@@ -893,7 +869,6 @@ export function QuestionView({
           base={base.name}
           manages={manages}
           question={null}
-          audience={saveAudience}
           draft={{
             label: copying ? $t('{label} (copie)', { label: title }) : draft.label || title,
             description: draft.description,

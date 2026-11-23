@@ -1,15 +1,15 @@
 'use client'
 
-import { type Field, type TableRef, api } from '@/lib/api/client'
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import { api, type Field, type TableRef } from '@/lib/api/client'
 
 /**
  * The table a long text belongs to, and its columns — what an editor of a long text needs

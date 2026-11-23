@@ -1,5 +1,6 @@
 'use client'
 
+import { Mail, Phone, ScanBarcode, Star } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Hint } from '@/components/ui/tooltip'
@@ -7,7 +8,6 @@ import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { cn } from '@/lib/utils'
-import { Mail, Phone, ScanBarcode, Star } from 'lucide-react'
 
 /**
  * The values that are drawn rather than written — chapter 04 §2.10, §2.11: a rating as
@@ -45,6 +45,7 @@ export function RatingStars({
   const current = Number.isFinite(n) && value !== null && value !== '' ? Math.round(n) : 0
   const star = size === 'md' ? 'size-5' : 'size-3.5'
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the role is img or group, both of which take aria-label
     <span
       className="inline-flex items-center gap-0.5"
       role={onChange === undefined ? 'img' : 'group'}
@@ -87,7 +88,10 @@ export function RatingStars({
 export function UserValue({
   id,
   compact = false,
-}: { readonly id: unknown; readonly compact?: boolean }) {
+}: {
+  readonly id: unknown
+  readonly compact?: boolean
+}) {
   const members = useMembers()
   if (typeof id !== 'string' || id === '') return <span className="text-muted-foreground">—</span>
   const name = memberName(members, id)

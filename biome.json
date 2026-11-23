@@ -1,17 +1,27 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
-    "ignore": [
-      "dist",
-      "node_modules",
-      ".turbo",
-      "docs",
-      ".next",
-      "next-env.d.ts",
-      ".playwright-mcp",
-      "www",
-      "tooling/i18n/app-source.json",
-      "apps/web/public/geo"
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.turbo",
+      "!**/docs",
+      "!**/.next",
+      "!**/next-env.d.ts",
+      "!**/.playwright-mcp",
+      "!**/www",
+      "!**/rust-server/crates/**/*.json",
+      "!**/*.md",
+      "!**/*.yml",
+      "!**/*.yaml",
+      "!**/tooling/i18n/app-source.json",
+      "!**/apps/web/public/geo"
     ]
   },
   "formatter": {
@@ -23,10 +33,23 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "error"
       }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.svg"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ],
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "javascript": {

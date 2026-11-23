@@ -2065,11 +2065,6 @@ export default {
 		download: 'JSON’u indir',
 		downloadNote: 'Kendi kurulumunuza aktarmak ya da kataloğa önermeden önce uyarlamak için.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Pano</strong> “{label}” — {blocks}',
-		blocks: {
-			one: '{n} blok',
-			other: '{n} blok',
-		},
 		automation: '<strong>Otomasyon</strong> “{label}”',
 		yes: 'Evet',
 		no: 'Hayır',

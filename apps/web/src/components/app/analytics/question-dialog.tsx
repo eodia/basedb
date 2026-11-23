@@ -1,5 +1,7 @@
 'use client'
 
+import type { QuestionQuery, Visualization } from '@basedb/contracts'
+import { useEffect, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { AUDIENCES } from '@/components/app/sql/query-dialog'
 import { Button } from '@/components/ui/button'
@@ -14,12 +16,10 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ApiError, type QueryAudience, type Question, api } from '@/lib/api/client'
+import { api, type QueryAudience, type Question } from '@/lib/api/client'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import type { QuestionQuery, Visualization } from '@basedb/contracts'
-import { useEffect, useState } from 'react'
 
 /**
  * Saving a question — built with the mouse or written in SQL — or changing what a saved one
@@ -36,7 +36,6 @@ export function QuestionDialog({
   manages,
   question,
   draft,
-  audience: firstAudience = 'personal',
   onClose,
   onSaved,
 }: {
@@ -54,8 +53,6 @@ export function QuestionDialog({
     readonly query: QuestionQuery
     readonly visualization: Visualization
   }
-  /** Who a new question is offered to — the whole base, for one meant for a dashboard. */
-  readonly audience?: QueryAudience
   readonly onClose: () => void
   readonly onSaved: (saved: Question) => void
 }) {
@@ -73,7 +70,7 @@ export function QuestionDialog({
     if (!open) return
     setLabel(question?.label ?? draft?.label ?? '')
     setDescription(question?.description ?? draft?.description ?? '')
-    setAudience(question?.audience ?? (manages ? firstAudience : 'personal'))
+    setAudience(question?.audience ?? 'personal')
     setGroups(new Set(question?.groups.map((g) => g.id) ?? []))
     setError(null)
   }, [open, question])
@@ -120,22 +117,7 @@ export function QuestionDialog({
       onSaved(saved)
       onClose()
     } catch (e) {
-      // A question a dashboard places keeps the whole base: the dashboards are named.
-      if (
-        e instanceof ApiError &&
-        e.code === 'REQUEST_INVALID' &&
-        e.details.reason === 'dans_un_tableau_de_bord'
-      ) {
-        const placed = Array.isArray(e.details.detail) ? e.details.detail : []
-        setError(
-          $t(
-            'Un tableau de bord s’en sert ({dashboards}) : elle reste à toute la base. Retirez-la d’abord de ses cartes.',
-            { dashboards: placed.map((d) => $t('« {name} »', { name: String(d) })).join(', ') },
-          ),
-        )
-      } else {
-        setError(messageFor(e))
-      }
+      setError(messageFor(e))
     } finally {
       setBusy(false)
     }

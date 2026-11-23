@@ -1,12 +1,12 @@
 import { type FormulaDialect, formulaInEnglish } from './formula-words.js'
 import {
+  checkTemplate,
+  labelKey,
   type Template,
   type TemplateCheck,
   type TemplateField,
   type TemplateViewKind,
   VIEW_FIELD_KEYS,
-  checkTemplate,
-  labelKey,
 } from './templates.js'
 
 /**
@@ -15,7 +15,7 @@ import {
  * A template is written in French. A dictionary per language and per template maps each
  * of its French texts to its translation (`packages/templates/i18n/<langue>/<clé>.json`);
  * a text it does not hold stays French. A label is translated once and followed wherever
- * it is cited — rows, formulas, filters, views, dashboards, automations, the `{{…}}` of a
+ * it is cited — rows, formulas, filters, views, automations, the `{{…}}` of a
  * prompt or a message —: a translator leaves the citations in French, and this module
  * rewrites them. The result goes through the validator every template goes through, so a
  * dictionary that breaks a citation, or makes two labels one, is refused rather than
@@ -27,13 +27,13 @@ export type TemplateDictionary = Readonly<Record<string, string>>
 
 /** What a text is, for whoever translates it: its place says how to write it. */
 export type TemplateTextKind =
-  /** The name of a table, a field, a relation, a view, a dashboard, an automation. */
+  /** The name of a table, a field, a relation, a view, an automation. */
   | 'label'
   /** A choice of a list. */
   | 'option'
   /** A tag of the gallery. */
   | 'tag'
-  /** A description, a summary, a title, a form's wording, a block's text. */
+  /** A description, a summary, a title, a form's wording. */
   | 'text'
   /** A sample value of a short text — often the name of a fictitious company or person. */
   | 'value'
@@ -389,48 +389,6 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
     }
   })
 
-  const dashboards = template.dashboards.map((dashboard, di) => {
-    const at = `dashboards[${di}]`
-    return {
-      label: text(dashboard.label, 'label', `${at}.label`),
-      ...optional('description', dashboard.description, 'text', `${at}.description`),
-      blocks: dashboard.blocks.map((block, bi) => {
-        const where = `${at}.blocks[${bi}]`
-        const title = block.title === '' ? '' : text(block.title, 'label', `${where}.title`)
-        switch (block.kind) {
-          case 'text':
-            return { ...block, title, body: text(block.body, 'text', `${where}.body`) }
-          case 'number':
-            return {
-              ...block,
-              title,
-              field: block.field === null ? null : cited(block.field),
-              filter: expression(block.filter, words),
-            }
-          case 'chart':
-            return {
-              ...block,
-              title,
-              group_by: cited(block.group_by),
-              filter: expression(block.filter, words),
-            }
-          case 'list':
-            return {
-              ...block,
-              title,
-              fields: block.fields.map((f) => cited(f)),
-              filter: expression(block.filter, words),
-              sort: block.sort.startsWith('-')
-                ? `-${cited(block.sort.slice(1))}`
-                : block.sort === ''
-                  ? ''
-                  : cited(block.sort),
-            }
-        }
-      }),
-    }
-  })
-
   const automations = template.automations.map((automation, ai) => {
     const at = `automations[${ai}]`
     const values = (
@@ -486,6 +444,8 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
                   ? ''
                   : citations(text(action.message, 'message', `${where}.message`), words),
             }
+          default:
+            return action satisfies never
         }
       }),
     }
@@ -511,7 +471,6 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
     links,
     rows,
     views,
-    dashboards,
     automations,
   }
 }

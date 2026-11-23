@@ -1,7 +1,7 @@
 /**
- * Analysis — chapter 18: the questions a base answers, how they are shown, and the
- * dashboards that gather them. One vocabulary for the kernel, which checks and runs what
- * it receives, and for the interface, which builds it with the mouse.
+ * Analysis — chapter 18: the questions a base answers and how they are shown. One
+ * vocabulary for the kernel, which checks and runs what it receives, and for the
+ * interface, which builds it with the mouse.
  *
  * A question built with the mouse cites tables by identifier and fields by physical name,
  * as the data routes do; it never holds SQL. A SQL question holds one `SELECT` and its
@@ -194,8 +194,8 @@ export interface BuilderQuery {
 
 /**
  * `text`, `number`, `date`: `{{nom}}` becomes a literal. `filter`: `{{nom}}` becomes a whole
- * condition on the expression `column` — `TRUE` when no value is given —, so that a filter of
- * a dashboard can narrow the rows of a SQL question as it narrows the others.
+ * condition on the expression `column` — `TRUE` when no value is given —, so that a filter
+ * can narrow the rows of a SQL question as it narrows the others.
  */
 export const SQL_VARIABLE_TYPES = ['text', 'number', 'date', 'filter'] as const
 export type SqlVariableType = (typeof SQL_VARIABLE_TYPES)[number]
@@ -521,7 +521,7 @@ export function resultNames(query: Pick<BuilderQuery, 'aggregations' | 'breakout
   return { breakouts, aggregations }
 }
 
-// ── Dashboard filters ───────────────────────────────────────────────────────
+// ── Constraints ─────────────────────────────────────────────────────────────
 
 export const PARAMETER_TYPES = ['date', 'category', 'text', 'number', 'temporal_unit'] as const
 export type ParameterType = (typeof PARAMETER_TYPES)[number]
@@ -535,27 +535,10 @@ export type NumberOperator = (typeof NUMBER_OPERATORS)[number]
  */
 export type ParameterValue = string | readonly string[] | readonly (number | null)[]
 
-export interface DashboardParameter {
-  readonly id: string
-  readonly label: string
-  readonly type: ParameterType
-  readonly default?: ParameterValue | null
-  /** A category: several values at once. */
-  readonly multiple?: boolean
-  readonly operator?: NumberOperator
-  /** A period: those offered. */
-  readonly units?: readonly TemporalTruncation[]
-}
-
-/** What a filter is tied to on a card: a column of its question, or a SQL variable. */
+/** What a constraint bears on: a column of the question, or a SQL variable. */
 export type ParameterTarget = { readonly column: ColumnRef } | { readonly variable: string }
 
-export interface CardMapping {
-  readonly parameter: string
-  readonly target: ParameterTarget
-}
-
-/** A filter with its value, as a card asks the kernel to apply it. */
+/** A filter with its value, as a question asks the kernel to apply it. */
 export interface Constraint {
   readonly target: ParameterTarget
   readonly type: ParameterType
@@ -570,223 +553,6 @@ export function parameterHasValue(
   if (value === null || value === undefined) return false
   if (typeof value === 'string') return value.trim() !== ''
   return value.some((v) => v !== null && v !== '')
-}
-
-/**
- * The filters a card applies: each filter tied to it that has a value. The application
- * sends them with the card; a shared dashboard's page sends only the values, and the
- * kernel ties them itself — a visitor never chooses what a card filters.
- */
-export function cardConstraints(
-  mappings: readonly CardMapping[] | undefined,
-  parameters: readonly DashboardParameter[],
-  values: Readonly<Record<string, ParameterValue | null | undefined>>,
-): Constraint[] {
-  const out: Constraint[] = []
-  for (const mapping of mappings ?? []) {
-    const parameter = parameters.find((p) => p.id === mapping.parameter)
-    if (parameter === undefined) continue
-    const value = values[parameter.id]
-    if (!parameterHasValue(value)) continue
-    out.push({
-      target: mapping.target,
-      type: parameter.type,
-      value,
-      ...(parameter.operator === undefined ? {} : { operator: parameter.operator }),
-    })
-  }
-  return out
-}
-
-/** Kinds of field a filter of each type may be tied to. */
-const PARAMETER_KINDS: Readonly<Record<ParameterType, ReadonlySet<string>>> = {
-  date: new Set(['date', 'datetime']),
-  category: new Set([
-    'select',
-    'multi_select',
-    'user',
-    'link',
-    'multi_link',
-    'short_text',
-    'email',
-    'url',
-    'boolean',
-    'number',
-    'autonumber',
-    'formula',
-  ]),
-  text: new Set(['short_text', 'long_text', 'email', 'url', 'select', 'formula']),
-  number: new Set(['number', 'rollup', 'count', 'autonumber']),
-  temporal_unit: new Set(['date', 'datetime']),
-}
-
-/** Whether a filter of this type can bear on a column of this kind. */
-export const parameterFits = (type: ParameterType, kind: string): boolean =>
-  PARAMETER_KINDS[type].has(kind)
-
-/** Whether a filter of this type can feed a SQL variable of this type. */
-export function parameterFitsVariable(type: ParameterType, variable: SqlVariableType): boolean {
-  if (variable === 'filter') return type !== 'temporal_unit'
-  if (variable === 'date') return type === 'date'
-  if (variable === 'number') return type === 'number'
-  return type === 'text' || type === 'category' || type === 'temporal_unit'
-}
-
-// ── Dashboards ──────────────────────────────────────────────────────────────
-
-/** Columns of a dashboard's grid. */
-export const DASHBOARD_COLUMNS = 24
-
-export const DASHBOARD_LIMITS = {
-  cards: 60,
-  tabs: 12,
-  parameters: 16,
-  label: 120,
-  text: 5000,
-  /** A rich text's HTML, its tags counted. */
-  html: 20_000,
-  /** The values one text cites. */
-  variables: 20,
-  height: 60,
-} as const
-
-export interface DashboardTab {
-  readonly id: string
-  readonly label: string
-}
-
-export const CARD_KINDS = ['question', 'heading', 'text', 'embed'] as const
-export type CardKind = (typeof CARD_KINDS)[number]
-
-export interface DashboardCard {
-  readonly id: string
-  /** The tab it sits in; `null` when the dashboard has none. */
-  readonly tab: string | null
-  readonly x: number
-  readonly y: number
-  readonly w: number
-  readonly h: number
-  readonly kind: CardKind
-  /** Shown above the card; for a question, its label when empty. */
-  readonly title?: string
-  /** A saved question, by identifier… */
-  readonly question?: string
-  /** …or a question kept in the card alone. */
-  readonly query?: QuestionQuery
-  /** How the card shows its question — the question's own way when absent. */
-  readonly visualization?: Visualization
-  readonly mappings?: readonly CardMapping[]
-  /** A heading, or a text: in Markdown, or in HTML when `rich`. */
-  readonly text?: string
-  /** A text in HTML — the rich text of chapter 04 §2.2 —, as its editor writes it. */
-  readonly rich?: boolean
-  /** What a text cites, `{{nom}}`, by the name it cites it with. */
-  readonly variables?: readonly TextVariable[]
-  /** A page from elsewhere (chapter 18 §2). */
-  readonly url?: string
-}
-
-/**
- * A value a text card cites — `{{nom}}` in its text: what a query gives, the value its
- * number would show — a saved query of the whole base, by reference; a query kept in the
- * text, as a card keeps one; or a question card of the dashboard, under its own filters —,
- * or the value of one of the dashboard's filters, as its control says it.
- */
-export type TextVariable =
-  | {
-      readonly name: string
-      readonly question: string
-      readonly mappings?: readonly CardMapping[]
-    }
-  | {
-      readonly name: string
-      readonly query: QuestionQuery
-      /** What the query was called, for its pill. */
-      readonly label?: string
-      readonly visualization?: Visualization
-      readonly mappings?: readonly CardMapping[]
-    }
-  | { readonly name: string; readonly card: string }
-  | { readonly name: string; readonly parameter: string }
-
-/** A variable that runs a query of its own, tied to the filters by the text itself. */
-export type TiedVariable = Extract<
-  TextVariable,
-  { readonly question: string } | { readonly query: QuestionQuery }
->
-
-export const tiesItself = (variable: TextVariable): variable is TiedVariable =>
-  'question' in variable || 'query' in variable
-
-/** The names a text cites, `{{nom}}`, each once, in the order they come. */
-export function citedNames(text: string): string[] {
-  const names = [...text.matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/g)].map((m) => m[1] as string)
-  return [...new Set(names)]
-}
-
-/**
- * What a text runs for a value it cites, as a card: the card it names among `cards`, or
- * the query it names or keeps — in the text's place, tied as the variable ties it. `null`
- * for a filter's value, which runs nothing, and for a card that is not there.
- */
-export function variableCard(
-  card: DashboardCard,
-  variable: TextVariable,
-  cards: readonly DashboardCard[] = [],
-): DashboardCard | null {
-  if ('parameter' in variable) return null
-  if ('card' in variable) {
-    return cards.find((c) => c.id === variable.card && c.kind === 'question') ?? null
-  }
-  return {
-    id: card.id,
-    tab: card.tab,
-    x: card.x,
-    y: card.y,
-    w: card.w,
-    h: card.h,
-    kind: 'question',
-    ...('question' in variable
-      ? { question: variable.question }
-      : {
-          query: variable.query,
-          ...(variable.visualization === undefined
-            ? {}
-            : { visualization: variable.visualization }),
-        }),
-    ...(variable.mappings === undefined ? {} : { mappings: variable.mappings }),
-  }
-}
-
-/**
- * Every question a dashboard runs, as a card: its question cards, and the queries its
- * texts run themselves — where a filter finds its values, what a click on a point filters.
- * A text citing a card runs that card, already there.
- */
-export function questionCards(cards: readonly DashboardCard[]): DashboardCard[] {
-  return cards.flatMap((card) => {
-    if (card.kind === 'question') return [card]
-    if (card.kind !== 'text') return []
-    return (card.variables ?? []).filter(tiesItself).flatMap((v) => variableCard(card, v) ?? [])
-  })
-}
-
-/**
- * A text without some of the values it cites — a filter or a card gone: their variables
- * go, and their citations leave its words with them.
- */
-export function withoutVariables(
-  card: DashboardCard,
-  gone: (variable: TextVariable) => boolean,
-): DashboardCard {
-  const leaving = new Set((card.variables ?? []).filter(gone).map((v) => v.name))
-  if (leaving.size === 0) return card
-  const variables = (card.variables ?? []).filter((v) => !leaving.has(v.name))
-  const text = (card.text ?? '').replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/g, (whole, name: string) =>
-    leaving.has(name) ? '' : whole,
-  )
-  const { variables: _old, ...rest } = card
-  return { ...rest, text, ...(variables.length === 0 ? {} : { variables }) }
 }
 
 // ── Relative dates ──────────────────────────────────────────────────────────
@@ -952,203 +718,6 @@ export function periodExpression(
     default:
       return null
   }
-}
-
-// ── The blocks of the first dashboards ──────────────────────────────────────
-
-/** A block of a dashboard as chapter 18 first had them, before the grid. */
-export type LegacyBlock =
-  | {
-      readonly kind: 'number'
-      readonly width: number
-      readonly title: string
-      readonly table: string
-      readonly aggregate: 'count' | 'sum' | 'avg' | 'min' | 'max'
-      readonly field: string | null
-      readonly filter: string
-    }
-  | {
-      readonly kind: 'chart'
-      readonly width: number
-      readonly title: string
-      readonly table: string
-      readonly group_by: string
-      readonly filter: string
-      readonly style: 'bar' | 'pie'
-    }
-  | {
-      readonly kind: 'list'
-      readonly width: number
-      readonly title: string
-      readonly table: string
-      readonly fields: readonly string[]
-      readonly filter: string
-      readonly sort: string
-      readonly limit: number
-    }
-  | { readonly kind: 'text'; readonly width: number; readonly title: string; readonly body: string }
-  | {
-      readonly kind: 'embed'
-      readonly width: number
-      readonly title: string
-      readonly url: string
-      readonly height: number
-    }
-
-/** Rows of the grid, in pixels — the height of one unit of `h`. */
-export const DASHBOARD_ROW_HEIGHT = 40
-
-/**
- * Places cards one after the other, left to right then row after row — how blocks lay on
- * their old three columns, and where a card is added at the end.
- */
-export function flowLayout<T extends { readonly w: number; readonly h: number }>(
-  items: readonly T[],
-  startY = 0,
-): Array<T & { x: number; y: number }> {
-  let x = 0
-  let y = startY
-  let rowHeight = 0
-  return items.map((item) => {
-    const w = Math.min(Math.max(1, item.w), DASHBOARD_COLUMNS)
-    if (x + w > DASHBOARD_COLUMNS) {
-      x = 0
-      y += rowHeight
-      rowHeight = 0
-    }
-    const placed = { ...item, w, x, y }
-    x += w
-    rowHeight = Math.max(rowHeight, item.h)
-    return placed
-  })
-}
-
-/** The size a card starts at, by what it shows. */
-export function cardSize(
-  kind: CardKind,
-  viz?: VisualizationType,
-): { readonly w: number; readonly h: number } {
-  if (kind === 'heading') return { w: DASHBOARD_COLUMNS, h: 2 }
-  if (kind === 'text') return { w: 12, h: 4 }
-  if (kind === 'embed') return { w: 12, h: 8 }
-  switch (viz) {
-    case 'scalar':
-    case 'trend':
-    case 'progress':
-      return { w: 6, h: 4 }
-    case 'gauge':
-      return { w: 8, h: 6 }
-    case 'table':
-    case 'pivot':
-      return { w: 12, h: 8 }
-    default:
-      return { w: 12, h: 7 }
-  }
-}
-
-/**
- * Where new cards go: under the cards of their tab, side by side while the row has room —
- * four numbers make one row, two charts another.
- */
-export function placedAfter<T extends { readonly w: number; readonly h: number }>(
-  cards: ReadonlyArray<Pick<DashboardCard, 'tab' | 'y' | 'h'>>,
-  tab: string | null,
-  items: readonly T[],
-): Array<T & { x: number; y: number }> {
-  const bottom = cards.filter((c) => c.tab === tab).reduce((max, c) => Math.max(max, c.y + c.h), 0)
-  return flowLayout(items, bottom)
-}
-
-const filtersOf = (filter: string): Filter[] =>
-  filter.trim() === '' ? [] : [{ expression: filter.trim() }]
-
-/** `-_created_at,nom` as sort terms. */
-export function sortTerms(sort: string): OrderBy[] {
-  return sort
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s !== '' && s !== '-')
-    .map((s) => ({
-      target: { kind: 'column', column: { field: s.replace(/^-/, '') } },
-      desc: s.startsWith('-'),
-    }))
-}
-
-/** The cards the blocks of a first dashboard become: same order, same widths, same reading. */
-export function cardsFromBlocks(
-  blocks: readonly LegacyBlock[],
-  newId: (index: number) => string = (index) => `c${index + 1}`,
-): DashboardCard[] {
-  const sized = blocks.map((block, index) => {
-    const w = (Math.min(Math.max(block.width, 1), 3) * DASHBOARD_COLUMNS) / 3
-    const base = {
-      id: newId(index),
-      tab: null,
-      w,
-      ...(block.title === '' ? {} : { title: block.title }),
-    }
-    switch (block.kind) {
-      case 'number':
-        return {
-          ...base,
-          h: 4,
-          kind: 'question' as const,
-          query: {
-            kind: 'builder' as const,
-            source: block.table,
-            filters: filtersOf(block.filter),
-            aggregations: [
-              block.aggregate === 'count' || block.field === null
-                ? { fn: 'count' as const }
-                : { fn: block.aggregate, column: { field: block.field } },
-            ],
-          },
-          visualization: { type: 'scalar' as const },
-        }
-      case 'chart':
-        return {
-          ...base,
-          h: 8,
-          kind: 'question' as const,
-          query: {
-            kind: 'builder' as const,
-            source: block.table,
-            filters: filtersOf(block.filter),
-            aggregations: [{ fn: 'count' as const }],
-            breakouts: [{ field: block.group_by }],
-            ...(block.style === 'pie'
-              ? {}
-              : { sort: [{ target: { kind: 'aggregation' as const, index: 0 }, desc: true }] }),
-          },
-          visualization: { type: block.style === 'pie' ? ('pie' as const) : ('row' as const) },
-        }
-      case 'list':
-        return {
-          ...base,
-          h: Math.min(Math.max(Math.ceil(block.limit / 2) + 2, 5), 14),
-          kind: 'question' as const,
-          query: {
-            kind: 'builder' as const,
-            source: block.table,
-            filters: filtersOf(block.filter),
-            fields: block.fields.map((field) => ({ field })),
-            sort: sortTerms(block.sort),
-            limit: block.limit,
-          },
-          visualization: { type: 'table' as const },
-        }
-      case 'text':
-        return { ...base, h: 4, kind: 'text' as const, text: block.body }
-      case 'embed':
-        return {
-          ...base,
-          h: Math.min(Math.ceil(block.height / DASHBOARD_ROW_HEIGHT) + 1, DASHBOARD_LIMITS.height),
-          kind: 'embed' as const,
-          url: block.url,
-        }
-    }
-  })
-  return flowLayout(sized) as DashboardCard[]
 }
 
 // ── Bounds ──────────────────────────────────────────────────────────────────

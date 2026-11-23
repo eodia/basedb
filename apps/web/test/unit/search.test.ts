@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MATCH,
   excerpt,
   fold,
   highlights,
   looksLikeQuestion,
+  MATCH,
   prepare,
   runsOf,
   scoreOf,

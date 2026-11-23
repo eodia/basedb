@@ -391,59 +391,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Santé du produit",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Tickets ouverts",
-          "table": "tickets",
-          "aggregate": "count",
-          "filter": "[Statut] ne \"Résolu\" and [Statut] ne \"Fermé\""
-        },
-        {
-          "kind": "number",
-          "title": "Critiques ouverts",
-          "table": "tickets",
-          "aggregate": "count",
-          "filter": "[Priorité] eq \"Critique\" and [Statut] ne \"Résolu\" and [Statut] ne \"Fermé\""
-        },
-        {
-          "kind": "number",
-          "title": "À trier",
-          "table": "tickets",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"Nouveau\""
-        },
-        {
-          "kind": "chart",
-          "title": "Par catégorie",
-          "table": "tickets",
-          "group_by": "Catégorie",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Par statut",
-          "table": "tickets",
-          "group_by": "Statut",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Critiques à traiter",
-          "table": "tickets",
-          "fields": ["Titre", "Statut", "Assigné à"],
-          "filter": "[Priorité] eq \"Critique\" and [Statut] ne \"Résolu\" and [Statut] ne \"Fermé\"",
-          "sort": "Ouvert le",
-          "limit": 5,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Date de résolution",

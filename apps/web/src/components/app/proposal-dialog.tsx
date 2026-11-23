@@ -1,5 +1,7 @@
 'use client'
 
+import { Bot, Check, ChevronDown, Loader2, Table2, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { KIND_LABELS } from '@/components/app/field-icon'
 import { LookIcon, OptionGlyph } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
@@ -12,18 +14,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  api,
   type Proposal,
   type ProposalTable,
   type ProposedChoice,
   type ProposedLook,
   type UserData,
-  api,
 } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor, sentenceFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Bot, Check, ChevronDown, Loader2, Table2, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The « Propositions » queue of a base — chapter 09 §7: what agents proposed to change in

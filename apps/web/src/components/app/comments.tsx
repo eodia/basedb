@@ -1,5 +1,15 @@
 'use client'
 
+import {
+  AlertTriangle,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Send,
+  Trash2,
+} from 'lucide-react'
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { toneOf } from '@/components/app/collab'
 import { initials } from '@/components/app/value-widgets'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -12,22 +22,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
-import { type Member, type RecordComment, type TableRef, api } from '@/lib/api/client'
+import { api, type Member, type RecordComment, type TableRef } from '@/lib/api/client'
 import { editableText, encodeMentions, mentionAt, relativeTime, segmentsOf } from '@/lib/collab'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  AlertTriangle,
-  Loader2,
-  MessageSquare,
-  MoreHorizontal,
-  Pencil,
-  Send,
-  Trash2,
-} from 'lucide-react'
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * The comments of a row — chapter 16 §1, on screen: the thread, oldest first, and a box
@@ -249,7 +249,10 @@ function CommentItem({
 export function CommentBody({
   body,
   self,
-}: { readonly body: string; readonly self: string | null }) {
+}: {
+  readonly body: string
+  readonly self: string | null
+}) {
   return (
     <>
       {segmentsOf(body).map((segment, index) => {
@@ -408,7 +411,9 @@ function Composer({
         className="min-h-16 resize-none pr-2 text-sm"
       />
       {suggestions.length > 0 && (
+        // biome-ignore lint/a11y/useSemanticElements: a floating list of suggestions, which a <fieldset> would not lay out
         <div
+          role="group"
           aria-label={$t('Personnes à mentionner')}
           className="absolute bottom-full left-0 z-20 mb-1 w-64 overflow-hidden rounded-md border bg-popover py-1 shadow-lg"
         >

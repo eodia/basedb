@@ -1,44 +1,26 @@
 'use client'
 
-import type { Row } from '@/components/app/grid/cell'
-import { OptionBadge, OptionGlyph } from '@/components/app/option-badge'
-import { CardDescription, RecordCard, coverOf } from '@/components/app/views/card'
-import { Button } from '@/components/ui/button'
-import { Hint } from '@/components/ui/tooltip'
-import { type Field, type FieldOption, type Table, api } from '@/lib/api/client'
-import { quoteLiteral } from '@/lib/expression'
-import { $t } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { cn } from '@/lib/utils'
-import {
-  type KanbanSpec,
-  andFilter,
-  nextHandOrder,
-  orderByHand,
-  pick,
-  titleFieldOf,
-} from '@/lib/views'
 import {
   type CollisionDetection,
+  closestCenter,
   DndContext,
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
   type DropAnimation,
-  PointerSensor,
-  closestCenter,
   defaultDropAnimationSideEffects,
+  PointerSensor,
   useDraggable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import {
-  SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  SortableContext,
   useSortable,
 } from '@dnd-kit/sortable'
-import { CSS, type Coordinates, getEventCoordinates } from '@dnd-kit/utilities'
+import { type Coordinates, CSS, getEventCoordinates } from '@dnd-kit/utilities'
 import { Inbox, Loader2, Plus } from 'lucide-react'
 import {
   type CSSProperties,
@@ -51,6 +33,24 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { Row } from '@/components/app/grid/cell'
+import { OptionBadge, OptionGlyph } from '@/components/app/option-badge'
+import { CardDescription, coverOf, RecordCard } from '@/components/app/views/card'
+import { Button } from '@/components/ui/button'
+import { Hint } from '@/components/ui/tooltip'
+import { api, type Field, type FieldOption, type Table } from '@/lib/api/client'
+import { quoteLiteral } from '@/lib/expression'
+import { $t } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
+import {
+  andFilter,
+  type KanbanSpec,
+  nextHandOrder,
+  orderByHand,
+  pick,
+  titleFieldOf,
+} from '@/lib/views'
 
 /**
  * The kanban — one column per choice of a list, and a card per row (ch. 11 §1.6).

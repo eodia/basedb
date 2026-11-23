@@ -1,0 +1,1 @@
+{"type":"object","required":["filter","explanation"],"properties":{"filter":{"type":"string"},"sort":{"type":"string","nullable":true},"explanation":{"type":"string"}}}

@@ -1,8 +1,8 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import { Hint } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import type { ComponentType } from 'react'
 
 export interface SegmentedOption<T extends string> {
   readonly value: T
@@ -58,10 +58,10 @@ export function Segmented<T extends string>({
         const on = o.value === value
         const Icon = o.icon
         const button = (
+          // biome-ignore lint/a11y/useSemanticElements: a radio of a group of buttons with pictograms
           <button
             key={o.value}
             type="button"
-            // biome-ignore lint/a11y/useSemanticElements: a radio of a group of buttons with pictograms
             role="radio"
             aria-checked={on}
             tabIndex={on || (index < 0 && o === options[0]) ? 0 : -1}

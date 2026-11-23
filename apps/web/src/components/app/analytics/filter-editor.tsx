@@ -1,5 +1,8 @@
 'use client'
 
+import type { BuilderQuery, Filter, FilterOp, FilterValue } from '@basedb/contracts'
+import { Check, Loader2, Search } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { DateInput } from '@/components/app/date-picker'
 import { ExpressionEditor } from '@/components/app/expression-editor'
 import { OptionBadge } from '@/components/app/option-badge'
@@ -11,21 +14,18 @@ import { valueText } from '@/lib/analytics/format'
 import {
   type ColumnOption,
   DATE_PRESETS,
-  OP_LABELS,
-  VALUELESS,
   filterOpsFor,
   isNumeric,
   isTemporal,
+  OP_LABELS,
   tableOf,
+  VALUELESS,
 } from '@/lib/analytics/model'
-import { type DescribedBase, api } from '@/lib/api/client'
+import { api, type DescribedBase } from '@/lib/api/client'
 import { displayStored, storedFromText } from '@/lib/dates'
 import { $t } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { cn } from '@/lib/utils'
-import type { BuilderQuery, Filter, FilterOp, FilterValue } from '@basedb/contracts'
-import { Check, Loader2, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
 
 /**
  * A filter of the builder, edited — chapter 18 §3: the operators a column's kind offers,
@@ -46,7 +46,7 @@ export interface ValueChoice {
  * frequent values the reader can see, read by a question of their own.
  */
 export function useColumnValues(
-  /** `null` where there is no base to ask — a shared dashboard's page. */
+  /** `null` where there is no base to ask. */
   base: DescribedBase | null,
   query: Pick<BuilderQuery, 'source' | 'joins'> | null,
   column: ColumnOption | null,
@@ -229,7 +229,7 @@ export function DayField({
 
 /**
  * A period: one of the usual relative ones, or days of one's own — what a date filter of
- * a question and of a dashboard both take, as an expression (`past30days`, `2026-01-01~`).
+ * a question takes, as an expression (`past30days`, `2026-01-01~`).
  */
 export function PeriodPicker({
   value,

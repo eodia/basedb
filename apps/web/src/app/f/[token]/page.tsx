@@ -1,16 +1,16 @@
 'use client'
 
+import { Ban, Link2Off, Loader2, Lock } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FormFill } from '@/components/app/forms/form-fill'
 import { Login } from '@/components/login'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { ApiError, type Field, type SharedForm, api } from '@/lib/api/client'
+import { ApiError, api, type Field, type SharedForm } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
+import { useRouteToken } from '@/lib/route-token'
 import { useTheme } from '@/lib/theme'
 import type { FormSpec } from '@/lib/views'
-import { Ban, Link2Off, Loader2, Lock } from 'lucide-react'
-import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * A shared form — chapter 15: the page someone opens from a link.
@@ -140,7 +140,7 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
 const noSearch = async () => ({ options: [], truncated: false, filtered: true })
 
 export default function SharedFormPage() {
-  const { token } = useParams<{ token: string }>()
+  const token = useRouteToken()
   const [page, setPage] = useState<Page>({ kind: 'loading' })
 
   useEffect(() => useTheme.getState().initialize(), [])

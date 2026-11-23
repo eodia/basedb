@@ -1,6 +1,27 @@
 'use client'
 
+import {
+  CalendarDays,
+  CircleAlert,
+  CircleCheck,
+  Loader2,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Send,
+  Settings2,
+  Trash2,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { SidebarToggle } from '@/components/app/sidebar'
+import {
+  modeLabel,
+  SyncSettingsDialog,
+  type SyncSourceOption,
+  SyncWizard,
+  scheduleText,
+} from '@/components/app/sync-settings'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,30 +34,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Hint } from '@/components/ui/tooltip'
-import {
-  type DescribedBase,
-  type Integration,
-  type SyncSourceKind,
-  type SyncedTable,
-  api,
-} from '@/lib/api/client'
+import { api, type DescribedBase, type Integration, type SyncedTable } from '@/lib/api/client'
 import { relativeTime } from '@/lib/collab'
-import { $t } from '@/lib/i18n'
+import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  CalendarDays,
-  CircleAlert,
-  CircleCheck,
-  Loader2,
-  MessageSquare,
-  Plus,
-  RefreshCw,
-  Send,
-  Trash2,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * The integrations of a base — chapter 19, on screen: its Slack connections, its synced
@@ -44,12 +46,7 @@ import { toast } from 'sonner'
  * builds the base.
  */
 
-const SOURCES: ReadonlyArray<{
-  kind: SyncSourceKind
-  label: string
-  hint: string
-  placeholder: string
-}> = [
+const SOURCES: readonly SyncSourceOption[] = [
   {
     kind: 'csv',
     label: $t('Fichier CSV en ligne'),
@@ -71,6 +68,14 @@ const SOURCES: ReadonlyArray<{
       'Le lien de la vue partagée (ou de son API) : ses champs et ses lignes, tels que son propriétaire les montre.',
     ),
     placeholder: 'https://…/api/v1/views/…',
+  },
+  {
+    kind: 'insights',
+    label: $t('Question d’insights'),
+    hint: $t(
+      'Une requête enregistrée dans insights : une table ou plusieurs jointes, dans toute base que Trino atteint (PostgreSQL, Oracle, SQL Server…).',
+    ),
+    placeholder: '',
   },
 ]
 
@@ -362,6 +367,7 @@ function Synced({
 }) {
   const [items, setItems] = useState<readonly SyncedTable[] | null>(null)
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<SyncedTable | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -400,7 +406,7 @@ function Synced({
       icon={<RefreshCw className="size-5" />}
       title={$t('Tables synchronisées')}
       hint={$t(
-        'Des tables tenues à jour depuis une source : un fichier CSV, un agenda, la vue d’une autre base. Elles se lisent comme les autres, mais ne s’écrivent pas à la main.',
+        'Des tables tenues à jour depuis une source : un fichier CSV, un agenda, la vue d’une autre base, une question d’insights sur vos bases externes. Elles se lisent comme les autres, mais ne s’écrivent pas à la main.',
       )}
       action={
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAdding(true)}>
@@ -425,10 +431,11 @@ function Synced({
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{table.label}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {$t('{label} · {host} · toutes les {interval_minutes} min', {
+                  {$t('{label} · {host} · {mode} · {when}', {
                     label: SOURCES.find((s) => s.kind === table.source_kind)?.label,
-                    host: table.host,
-                    interval_minutes: table.interval_minutes,
+                    host: table.question?.name ?? table.host,
+                    mode: modeLabel(table.mode),
+                    when: scheduleText(table),
                   })}
                 </span>
                 <span className="block text-xs">
@@ -445,6 +452,17 @@ function Synced({
                 <RefreshCw className={cn('size-3.5', busy === table.table && 'animate-spin')} />
                 {$t('Synchroniser')}
               </Button>
+              <Hint label={$t('Façon de synchroniser, clé, fréquence')}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label={$t('Réglages')}
+                  onClick={() => setEditing(table)}
+                >
+                  <Settings2 className="size-3.5" />
+                </Button>
+              </Hint>
               <Hint label={$t('La table redevient une table ordinaire, avec ses lignes')}>
                 <Button
                   variant="ghost"
@@ -465,146 +483,37 @@ function Synced({
           ))}
         </div>
       )}
-      <SyncDialog
+      <SyncWizard
         open={adding}
         base={base}
+        sources={SOURCES}
         onClose={() => setAdding(false)}
         onDone={(created) => {
           setAdding(false)
           toast(
-            $t('Table « {label} » créée : {value} lignes', {
-              label: created.label,
-              value: created.last_counts?.created ?? 0,
-            }),
+            $tp(
+              created.last_counts?.created ?? 0,
+              'Table « {label} » créée : {count} ligne',
+              'Table « {label} » créée : {count} lignes',
+              { label: created.label, count: created.last_counts?.created ?? 0 },
+            ),
           )
           void load()
           onChanged()
         }}
       />
+      <SyncSettingsDialog
+        base={base}
+        table={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(saved) => {
+          setEditing(null)
+          toast($t('Réglages de « {label} » enregistrés', { label: saved.label }))
+          void load()
+          onChanged()
+        }}
+      />
     </Section>
-  )
-}
-
-function SyncDialog({
-  open,
-  base,
-  onClose,
-  onDone,
-}: {
-  readonly open: boolean
-  readonly base: DescribedBase
-  readonly onClose: () => void
-  readonly onDone: (created: SyncedTable) => void
-}) {
-  const [kind, setKind] = useState<SyncSourceKind>('csv')
-  const [label, setLabel] = useState('')
-  const [url, setUrl] = useState('')
-  const [interval, setInterval_] = useState(60)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  useEffect(() => {
-    if (!open) return
-    setKind('csv')
-    setLabel('')
-    setUrl('')
-    setInterval_(60)
-    setError(null)
-  }, [open])
-  const source = SOURCES.find((s) => s.kind === kind) ?? SOURCES[0]
-  const submit = async () => {
-    setBusy(true)
-    setError(null)
-    try {
-      onDone(
-        await api.createSyncedTable(base.name, {
-          label: label.trim(),
-          source: { kind, url: url.trim() },
-          interval_minutes: interval,
-        }),
-      )
-    } catch (e) {
-      setError(messageFor(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{$t('Nouvelle table synchronisée')}</DialogTitle>
-          <DialogDescription>
-            {$t(
-              'La table est créée avec les colonnes de la source, puis tenue à jour par le serveur.',
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid gap-1.5">
-            {SOURCES.map((s) => (
-              <button
-                key={s.kind}
-                type="button"
-                aria-pressed={kind === s.kind}
-                onClick={() => setKind(s.kind)}
-                className={cn(
-                  'rounded-lg border p-2.5 text-left text-sm hover:bg-accent/60',
-                  kind === s.kind && 'border-primary bg-primary/5 ring-1 ring-primary',
-                )}
-              >
-                <span className="block font-medium">{s.label}</span>
-                <span className="block text-xs text-muted-foreground">{s.hint}</span>
-              </button>
-            ))}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="sync-label">{$t('Nom de la table')}</Label>
-            <Input
-              id="sync-label"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder={$t('Stock')}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="sync-url">{$t('Adresse de la source')}</Label>
-            <Input
-              id="sync-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={source?.placeholder}
-              className="font-mono text-xs"
-            />
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Label htmlFor="sync-interval">{$t('Synchroniser toutes les')}</Label>
-            <Input
-              id="sync-interval"
-              type="number"
-              min={15}
-              max={1440}
-              value={interval}
-              onChange={(e) => setInterval_(Number(e.target.value))}
-              className="h-8 w-24"
-            />
-            <span className="text-muted-foreground">{$t('minutes')}</span>
-          </div>
-          {error !== null && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            {$t('Annuler')}
-          </Button>
-          <Button
-            onClick={() => void submit()}
-            disabled={busy || label.trim() === '' || url.trim() === ''}
-          >
-            {busy && <Loader2 className="size-4 animate-spin" />}
-            {busy ? $t('Lecture de la source…') : $t('Créer la table')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 

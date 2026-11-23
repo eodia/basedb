@@ -2054,11 +2054,6 @@ export default {
 		download: 'Download JSON-filen',
 		downloadNote: 'For at importere den i din instans eller tilpasse den, før du foreslår den til kataloget.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Dashboard</strong> »{label}« — {blocks}',
-		blocks: {
-			one: '{n} blok',
-			other: '{n} blokke',
-		},
 		automation: '<strong>Automatisering</strong> »{label}«',
 		yes: 'Ja',
 		no: 'Nej',

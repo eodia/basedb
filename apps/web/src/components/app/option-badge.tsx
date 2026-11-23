@@ -1,10 +1,10 @@
 'use client'
 
+import type { LucideIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { $t } from '@/lib/i18n'
 import { optionIcon } from '@/lib/option-icons'
 import { cn } from '@/lib/utils'
-import type { LucideIcon } from 'lucide-react'
-import type { CSSProperties } from 'react'
 
 /**
  * How a choice of a list looks: a colour of any hue, and either a pictogram or a picture.

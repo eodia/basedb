@@ -1,23 +1,5 @@
 'use client'
 
-import { FieldIcon } from '@/components/app/field-icon'
-import { RichTextEditor, RichTextView } from '@/components/app/rich-text-editor'
-import { citableColumns, useRawText, useTableFields } from '@/components/app/table-fields'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Field } from '@/lib/api/client'
-import { templateToLabels, templateToNames } from '@/lib/card-template'
-import { $t } from '@/lib/i18n'
-import { htmlToPlain } from '@/lib/rich-text'
-import { KEEPS_MOD_K } from '@/lib/store/palette'
-import { cn } from '@/lib/utils'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
@@ -47,6 +29,24 @@ import {
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { FieldIcon } from '@/components/app/field-icon'
+import { RichTextEditor, RichTextView } from '@/components/app/rich-text-editor'
+import { citableColumns, useRawText, useTableFields } from '@/components/app/table-fields'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { Field } from '@/lib/api/client'
+import { templateToLabels, templateToNames } from '@/lib/card-template'
+import { $t } from '@/lib/i18n'
+import { htmlToPlain } from '@/lib/rich-text'
+import { KEEPS_MOD_K } from '@/lib/store/palette'
+import { cn } from '@/lib/utils'
 
 /**
  * Long text, written in Markdown — how it reads in a cell, in the row's panel, and how it

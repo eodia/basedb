@@ -1,5 +1,7 @@
 'use client'
 
+import { Loader2, Lock, Pencil, Plus, Trash2, UserMinus, Users } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { initials } from '@/components/app/admin/admin-panel'
 import { ConfirmDialog } from '@/components/app/admin/users-tab'
 import { cancelled, useElevated } from '@/components/app/elevation'
@@ -17,12 +19,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Hint } from '@/components/ui/tooltip'
-import { type AdminUser, type Group, api } from '@/lib/api/client'
+import { type AdminUser, api, type Group } from '@/lib/api/client'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Loader2, Lock, Pencil, Plus, Trash2, UserMinus, Users } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Groups and who is in them.

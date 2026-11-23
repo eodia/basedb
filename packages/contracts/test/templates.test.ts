@@ -68,21 +68,6 @@ const tickets = {
     },
     { table: 'tickets', label: 'Ouverts', kind: 'grid', spec: { filter: '[Statut] ne "Résolu"' } },
   ],
-  dashboards: [
-    {
-      label: 'Vue d’ensemble',
-      blocks: [
-        { kind: 'number', title: 'Ouverts', table: 'tickets', filter: '[Statut] ne "Résolu"' },
-        {
-          kind: 'chart',
-          title: 'Par catégorie',
-          table: 'tickets',
-          group_by: 'Catégorie',
-          style: 'pie',
-        },
-      ],
-    },
-  ],
   automations: [
     {
       label: 'Date de résolution',
@@ -165,23 +150,31 @@ describe('a template', () => {
     )
   })
 
-  it('never takes a file, a shared page, or a formula citing what comes after it', () => {
+  it('never takes a file, or a formula citing what comes after it', () => {
     const t = structuredClone(tickets) as unknown as {
       tables: Array<{ fields: unknown[] }>
-      dashboards: Array<{ blocks: unknown[] }>
     }
     t.tables[1]?.fields.push({ label: 'Pièce', kind: 'file' })
     t.tables[1]?.fields.splice(5, 0, { label: 'Double âge', kind: 'formula', formula: '[Âge] * 2' })
-    t.dashboards[0]?.blocks.push({ kind: 'embed', url: 'https://x.example' })
     const check = checkTemplate(t)
     expect(check.ok).toBe(false)
     expect(check.issues.map((i) => i.message)).toEqual(
       expect.arrayContaining([
         'un modèle ne porte pas de fichier',
         '« Âge » est calculé : déclarez-le avant cette formule',
-        'un modèle ne porte pas de page extérieure',
       ]),
     )
+  })
+
+  it('ignores the dashboards an older template still declares', () => {
+    const check = checkTemplate({
+      ...tickets,
+      dashboards: [
+        { label: 'Vue d’ensemble', blocks: [{ kind: 'embed', url: 'https://x.example' }] },
+      ],
+    })
+    expect(check.issues).toEqual([])
+    expect(check.ok && check.template).not.toHaveProperty('dashboards')
   })
 
   it('gives the display column a simple type, adding one when repairing', () => {

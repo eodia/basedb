@@ -332,60 +332,6 @@
       "spec": { "date_field": "Date", "card_fields": ["Projet"] }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Portefeuille",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Projets en cours",
-          "table": "projets",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"En cours\""
-        },
-        {
-          "kind": "number",
-          "title": "Tâches bloquées",
-          "table": "taches",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"Bloqué\""
-        },
-        {
-          "kind": "number",
-          "title": "Heures restantes",
-          "table": "taches",
-          "aggregate": "sum",
-          "field": "Estimation (h)",
-          "filter": "[Statut] ne \"Fait\""
-        },
-        {
-          "kind": "chart",
-          "title": "Météo des projets",
-          "table": "projets",
-          "group_by": "Météo",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Tâches par statut",
-          "table": "taches",
-          "group_by": "Statut",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Échéances proches",
-          "table": "taches",
-          "fields": ["Titre", "Projet", "Échéance"],
-          "filter": "[Statut] ne \"Fait\"",
-          "sort": "Échéance",
-          "limit": 6,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Tâche terminée",

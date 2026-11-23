@@ -1,5 +1,7 @@
 'use client'
 
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Row } from '@/components/app/grid/cell'
 import { OptionBadge } from '@/components/app/option-badge'
 import { colorOf, titleOf } from '@/components/app/views/card'
@@ -7,14 +9,12 @@ import { Unavailable } from '@/components/app/views/kanban-view'
 import { loadRows } from '@/components/app/views/load'
 import { Button } from '@/components/ui/button'
 import { Hint } from '@/components/ui/tooltip'
-import { type Field, type Table, api } from '@/lib/api/client'
+import { api, type Field, type Table } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { weekStart } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import {
-  type TimelineScale,
-  type TimelineSpec,
   addDays,
   andFilter,
   daysBetween,
@@ -24,10 +24,10 @@ import {
   startOfDay,
   startOfWeek,
   storedOfDate,
+  type TimelineScale,
+  type TimelineSpec,
   titleFieldOf,
 } from '@/lib/views'
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The timeline — each row a bar from its start to its end, on a horizontal time axis

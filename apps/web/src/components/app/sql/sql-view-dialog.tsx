@@ -1,5 +1,7 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
 import { SqlEditor } from '@/components/app/sql-editor'
@@ -14,11 +16,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ApiError, type DescribedBase, type SqlView, api } from '@/lib/api/client'
+import { ApiError, api, type DescribedBase, type SqlView } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 /**
  * Creating a SQL view, or changing one (chapter 11 §1.8): a real PostgreSQL view of the

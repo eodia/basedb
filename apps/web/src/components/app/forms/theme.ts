@@ -1,6 +1,6 @@
-import { $t } from '@/lib/i18n'
 import type { FormAlign, FormFont, FormTheme } from '@basedb/contracts'
 import type { CSSProperties } from 'react'
+import { $t } from '@/lib/i18n'
 
 /**
  * The looks of a form — chapter 11 §1.4. Each theme is a whole: a background, a type, the

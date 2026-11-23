@@ -312,52 +312,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Stocks",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Articles à commander",
-          "table": "articles",
-          "aggregate": "count",
-          "filter": "[À commander] eq true"
-        },
-        { "kind": "number", "title": "Articles suivis", "table": "articles", "aggregate": "count" },
-        {
-          "kind": "number",
-          "title": "Sorties ce mois-ci",
-          "table": "mouvements",
-          "aggregate": "count",
-          "filter": "[Type] eq \"Sortie\""
-        },
-        {
-          "kind": "chart",
-          "title": "Articles par catégorie",
-          "table": "articles",
-          "group_by": "Catégorie",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Mouvements par type",
-          "table": "mouvements",
-          "group_by": "Type",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Derniers mouvements",
-          "table": "mouvements",
-          "fields": ["Libellé", "Article", "Quantité"],
-          "sort": "-Date",
-          "limit": 6,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Grosse sortie",

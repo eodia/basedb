@@ -1,4 +1,3 @@
-import { $t } from '@/lib/i18n'
 import {
   Angry,
   Archive,
@@ -155,6 +154,7 @@ import {
   X,
   Zap,
 } from 'lucide-react'
+import { $t } from '@/lib/i18n'
 
 /**
  * The pictograms an option of a list of choices may carry.

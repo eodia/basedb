@@ -1,7 +1,7 @@
 'use client'
 
-import { withBase, withoutBase } from '@/lib/base-path'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { withBase, withoutBase } from '@/lib/base-path'
 
 /**
  * Keeps the address bar in step with the screen, and follows the browser's back and forward.
@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * entry of its history.
  *
  * ONE ENTRY PER GESTURE. A click or a key opens a new entry in the history; whatever the
- * screen then settles on by itself — the dashboard it picks, the row a link opens once its
+ * screen then settles on by itself — the row a link opens once its
  * table is there, the first table of a base — replaces it rather than adding another, or
  * « précédent » would have to be pressed twice to leave a section. The first address the
  * screen writes replaces the one it was reached by, and so does everything a back or a

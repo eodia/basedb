@@ -1,15 +1,15 @@
 'use client'
 
+import { Check, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { type SignupPolicy, api } from '@/lib/api/client'
+import { api, type SignupPolicy } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { Check, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 /**
  * Who may create an account — chapter 13 §8. Open by default; closed, only the invited

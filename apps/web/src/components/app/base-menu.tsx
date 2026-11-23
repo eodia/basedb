@@ -1,5 +1,7 @@
 'use client'
 
+import { Loader2, Sparkles } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { EnvironmentsEditor, NewEnvironmentsField } from '@/components/app/environments-editor'
 import { usePhysicalRename } from '@/components/app/lifecycle-dialogs'
@@ -15,12 +17,10 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type DescribedBase, api } from '@/lib/api/client'
+import { api, type DescribedBase } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Loader2, Sparkles } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 
 /**
  * What one does to a base as a whole: create it, rename it, delete it.

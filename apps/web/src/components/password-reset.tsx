@@ -1,10 +1,12 @@
 'use client'
 
+import { Loader2, MailCheck } from 'lucide-react'
+import { useState } from 'react'
 import {
   AuthLayout,
   FormError,
-  PRESSABLE,
   PasswordInput,
+  PRESSABLE,
   REVEAL,
   revealAt,
 } from '@/components/auth-layout'
@@ -15,8 +17,6 @@ import { api } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Loader2, MailCheck } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * A forgotten password — chapter 13 §2.3, in two screens.

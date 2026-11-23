@@ -1,15 +1,15 @@
 'use client'
 
+import { ExternalLink, Loader2, Zap } from 'lucide-react'
+import { type MouseEvent, useState } from 'react'
+import { toast } from 'sonner'
 import type { Row } from '@/components/app/grid/cell'
 import { Hint } from '@/components/ui/tooltip'
-import { type Field, api } from '@/lib/api/client'
+import { api, type Field } from '@/lib/api/client'
 import { buttonUrl } from '@/lib/automations'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Loader2, Zap } from 'lucide-react'
-import { type MouseEvent, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * A button field, drawn in a cell, a card or the detail view — chapter 17 §4. It opens an

@@ -1,8 +1,8 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import type { JoinKind } from '@basedb/contracts'
 import { type ComponentType, useId } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * How two tables meet, drawn as two overlapping circles — the source on the left, the joined
@@ -12,7 +12,10 @@ import { type ComponentType, useId } from 'react'
 export function JoinGlyph({
   kind,
   className,
-}: { readonly kind: JoinKind; readonly className?: string }) {
+}: {
+  readonly kind: JoinKind
+  readonly className?: string
+}) {
   const clip = `join-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
     <svg viewBox="0 0 34 22" className={cn('h-4 w-[26px] shrink-0', className)} aria-hidden="true">

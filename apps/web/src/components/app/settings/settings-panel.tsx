@@ -1,5 +1,6 @@
 'use client'
 
+import { Bell, KeyRound, Palette, ShieldCheck, UserRound } from 'lucide-react'
 import { AppearanceTab } from '@/components/app/settings/appearance-tab'
 import { NotificationsTab } from '@/components/app/settings/notifications-tab'
 import { ProfileTab } from '@/components/app/settings/profile-tab'
@@ -10,7 +11,6 @@ import { SidebarToggle } from '@/components/app/sidebar'
 import type { Me } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Bell, KeyRound, Palette, ShieldCheck, UserRound } from 'lucide-react'
 
 /**
  * One's own settings — chapter 11 §10. Everything here is about the person signed in, and

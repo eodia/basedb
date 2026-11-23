@@ -1,15 +1,15 @@
 'use client'
 
+import { Loader2, Monitor } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Hint } from '@/components/ui/tooltip'
-import { type Me, api } from '@/lib/api/client'
+import { api, type Me } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { Loader2, Monitor } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The password, and where one is signed in — chapter 13 §2.3 and §4.3.

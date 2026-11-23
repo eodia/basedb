@@ -4,11 +4,11 @@ n8n nodes for [basedb](https://eodia.github.io/basedb/) — tables on PostgreSQL
 interface for the team. Read and write the rows of your tables from a workflow, and start a
 workflow when a row is created, changed or deleted.
 
-| Node | What it does |
-|---|---|
-| **basedb** | Rows: create, create or update, get, get many (filtered, sorted, every page), update. Comments: add one to a row. Usable as a tool by an AI agent. |
-| **basedb Trigger** | Checks a table at the interval you choose and starts the workflow for each row created — or created or updated — since the last check. Works wherever n8n runs. |
-| **basedb Webhook Trigger** | Receives basedb's webhooks the moment a row is created, updated or deleted — even by SQL written straight into PostgreSQL — and checks their signature. |
+| Node                       | What it does                                                                                                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **basedb**                 | Rows: create, create or update, get, get many (filtered, sorted, every page), update. Comments: add one to a row. Usable as a tool by an AI agent.              |
+| **basedb Trigger**         | Checks a table at the interval you choose and starts the workflow for each row created — or created or updated — since the last check. Works wherever n8n runs. |
+| **basedb Webhook Trigger** | Receives basedb's webhooks the moment a row is created, updated or deleted — even by SQL written straight into PostgreSQL — and checks their signature.         |
 
 ## Install
 

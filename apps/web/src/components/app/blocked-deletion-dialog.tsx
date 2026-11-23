@@ -1,5 +1,6 @@
 'use client'
 
+import { ExternalLink, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,10 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type ReferencedBlock, type Table, api } from '@/lib/api/client'
+import { api, type ReferencedBlock, type Table } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Link2 } from 'lucide-react'
 
 /**
  * Rows that cannot be deleted, said BEFORE anything is — chapter 04 §4.1.

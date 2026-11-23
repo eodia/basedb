@@ -1,31 +1,5 @@
 'use client'
 
-import { EnvironmentBadge } from '@/components/app/environment-badge'
-import { reportLine } from '@/components/app/environments-editor'
-import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Choice } from '@/components/ui/choice'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { Hint } from '@/components/ui/tooltip'
-import {
-  type ApplyReport,
-  type ComparedFieldCell,
-  type ComparedTableCell,
-  type EnvironmentComparison,
-  type EnvironmentSummary,
-  type PlanStep,
-  type ProjectBase,
-  type RowComparison,
-  type RowSample,
-  type StepStatus,
-  type StructurePlan,
-  type TableRowCounts,
-  api,
-} from '@/lib/api/client'
-import { $t, $tp, intlLocale } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { cn } from '@/lib/utils'
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -41,6 +15,32 @@ import {
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { EnvironmentBadge } from '@/components/app/environment-badge'
+import { reportLine } from '@/components/app/environments-editor'
+import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Hint } from '@/components/ui/tooltip'
+import {
+  type ApplyReport,
+  api,
+  type ComparedFieldCell,
+  type ComparedTableCell,
+  type EnvironmentComparison,
+  type EnvironmentSummary,
+  type PlanStep,
+  type ProjectBase,
+  type RowComparison,
+  type RowSample,
+  type StepStatus,
+  type StructurePlan,
+  type TableRowCounts,
+} from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
 
 /**
  * « Comparer les environnements » — chapter 14, on screen.
@@ -261,6 +261,7 @@ function StructureMatrix({
                   {name}
                   {table.differs && (
                     <span
+                      role="img"
                       className="size-1.5 shrink-0 rounded-full bg-amber-500"
                       aria-label={$t('Diffère')}
                     />
@@ -1136,6 +1137,7 @@ export function EnvironmentsDialog({
                 <span className="flex-1 truncate text-left">{$t('Tables et champs')}</span>
                 {comparison?.tables.some((t) => t.differs) && (
                   <span
+                    role="img"
                     className="size-1.5 rounded-full bg-amber-500"
                     aria-label={$t('Différences')}
                   />

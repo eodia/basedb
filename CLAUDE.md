@@ -4,9 +4,9 @@
 
 - **Ne modifiez jamais une migration publiée** (`packages/catalog-schema/migrations/`, celles de `sealed.json`) : chaque installation a enregistré sa somme de contrôle dans `_basedb.catalog_migration` et refuserait de démarrer (`CATALOG_CHECKSUM_MISMATCH`). `0001_catalogue.sql` est publiée depuis 0.1.0.
 - **Tout changement du catalogue va dans une nouvelle migration** : `pnpm catalog new <nom>` crée `NNNN_<nom>.sql`. Écrivez-la rejouable (`IF NOT EXISTS`, `DROP … IF EXISTS`), sans transaction explicite ni `CREATE INDEX CONCURRENTLY` : elle s'exécute déjà dans la sienne.
-- Une base locale existante se met à jour seule au démarrage suivant de l'API (`BASEDB_MIGRATE=1`) : inutile de la recréer.
-- `pnpm catalog status` montre l'état, `pnpm catalog check` vérifie (aussi lancé par `pnpm lint`). **À la publication d'une version** : `pnpm catalog seal X.Y.Z`, et `APPLICATION_VERSION` (`packages/core/src/catalog/cache.ts`) à `X.Y.Z` — le workflow `docker-publish.yml` refuse sinon.
-- La garantie « une installation mise à jour = une installation neuve » est testée par `packages/core/test/int/catalog-migrations.test.ts`, pour chaque version publiée.
+- Les migrations sont embarquées dans `basedb-server` à la compilation (`rust-server/crates/base/build.rs`) : une base locale existante se met à jour seule au démarrage suivant du serveur recompilé (`pnpm dev`, `BASEDB_MIGRATE=1`) — inutile de la recréer.
+- `pnpm catalog status` montre l'état, `pnpm catalog check` vérifie (aussi lancé par `pnpm lint`). **À la publication d'une version** : `pnpm catalog seal X.Y.Z`, et la version de `[workspace.package]` dans `rust-server/Cargo.toml` (`APPLICATION_VERSION` du serveur) à `X.Y.Z` — le workflow `docker-publish.yml` refuse sinon.
+- La garantie « une installation mise à jour = une installation neuve » est testée par `rust-server/crates/server/tests/catalog_migrations.rs` (`pnpm test:server`, un PostgreSQL dans `DATABASE_URL`), pour chaque version publiée.
 
 ## L'interface et le site parlent vingt langues
 

@@ -2061,11 +2061,6 @@ export default {
 		download: 'JSON herunterladen',
 		downloadNote: 'Um die Datei in Ihre Instanz zu importieren oder sie anzupassen, bevor Sie sie für den Katalog vorschlagen.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Dashboard</strong> „{label}“ – {blocks}',
-		blocks: {
-			one: '{n} Block',
-			other: '{n} Blöcke',
-		},
 		automation: '<strong>Automatisierung</strong> „{label}“',
 		yes: 'Ja',
 		no: 'Nein',

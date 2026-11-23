@@ -1,5 +1,6 @@
 'use client'
 
+import { Shield, UserRound, Users } from 'lucide-react'
 import { GroupsTab } from '@/components/app/admin/groups-tab'
 import { PermissionsTab } from '@/components/app/admin/permissions-tab'
 import { UsersTab } from '@/components/app/admin/users-tab'
@@ -7,7 +8,6 @@ import { SidebarToggle } from '@/components/app/sidebar'
 import type { Me } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Shield, UserRound, Users } from 'lucide-react'
 
 /**
  * The administration — chapter 05 §15: people, groups and permissions.

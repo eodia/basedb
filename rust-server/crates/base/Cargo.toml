@@ -1,0 +1,39 @@
+[package]
+name = "basedb-base"
+description = "Socle du serveur basedb : configuration, pools, transactions, erreurs, couches HTTP, migrations du catalogue, authentification, droits, audit."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "basedb_base"
+
+[dependencies]
+basedb_contracts.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+axum.workspace = true
+tower.workspace = true
+http-body-util.workspace = true
+bytes.workspace = true
+tokio-postgres.workspace = true
+postgres-types.workspace = true
+deadpool-postgres.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+regex.workspace = true
+indexmap.workspace = true
+sha2.workspace = true
+hmac.workspace = true
+base64.workspace = true
+getrandom.workspace = true
+subtle.workspace = true
+argon2.workspace = true
+uuid.workspace = true
+unicode-normalization.workspace = true
+url.workspace = true
+form_urlencoded.workspace = true
+futures-util.workspace = true
+lettre.workspace = true
+reqwest.workspace = true

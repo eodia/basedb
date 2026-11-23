@@ -7,7 +7,8 @@ of views, forms, formulas, automations, PDF documents and dashboards for your te
 tables with readable names that `psql`, your BI tools and your AI agents read directly. One
 image and a PostgreSQL: everything else is configured in the interface.
 
-This image holds every part of basedb, served on **a single port, `3000`**:
+This image holds every part of basedb — one native server, `basedb-server` — served on
+**a single port, `3000`**:
 
 - the **interface**: bases, tables, views, forms, dashboards, automations and all of the
   administration;
@@ -145,12 +146,12 @@ empty project offers the same demo base; `BASEDB_DEMO=1` turns an instance into 
 | | |
 |---|---|
 | Architectures | `linux/amd64`, `linux/arm64` |
-| Port | `3000`: the interface, `/api` and `/mcp`, behind a router inside the container |
+| Port | `3000`: the interface, `/api` and `/mcp`, all answered by `basedb-server` |
 | Volume | `/data`: the files of File and Image fields (or an S3-compatible bucket instead) |
-| Command | none: the API, the MCP server and the interface together |
-| User | `node`, unprivileged |
-| Health check | `GET /healthz`, on the API then through the router |
-| Base | Node 22, Debian Bookworm slim |
+| Command | `basedb-server`: the API, the MCP server and the interface in one process |
+| User | `basedb` (uid 1000), unprivileged |
+| Health check | `basedb-server healthcheck`: `GET /healthz` |
+| Base | Debian Bookworm slim — no Node, no router: a single Rust binary, the interface as static files |
 
 | Path | What answers |
 |---|---|
@@ -158,11 +159,11 @@ empty project offers the same demo base; `BASEDB_DEMO=1` turns an instance into 
 | `/mcp` | the MCP server (Streamable HTTP), for agents |
 | everything else — `/`, `/f/…`, `/v/…` | the interface, shared forms and views included |
 
-On startup, the API goes first: on an empty database, it applies the catalog and prepares the
-first administrator; afterwards, it applies, in order and each in its own transaction, the
-catalog migrations it is missing — your data stays in place. The MCP server starts as soon as
-the API answers. If any of the processes stops, the whole container stops, and the restart
-policy brings it back.
+On startup, on an empty database, the server applies the catalog and prepares the first
+administrator; afterwards, it applies, in order and each in its own transaction, the catalog
+migrations it is missing — your data stays in place (they are carried inside the binary). Then
+it answers, and runs the background work (automations, AI fields, purges, emails) unless
+`BASEDB_RUST_BACKGROUND=0`. Responses are gzipped for the browsers that take it.
 
 ### Tags
 
@@ -187,6 +188,10 @@ version rather than following `latest`.
 | `BASEDB_ENCRYPTION_KEY` | the instance key: signs sessions and encrypts stored secrets (AI keys, webhook secrets, form links): `openssl rand -base64 32`. **Keep it**: changing it signs everyone out, and a backup without it cannot restore those secrets |
 | `BASEDB_PUBLIC_URL` | in production, the public address: the return of an OIDC sign-in, the links in emails |
 
+Any `BASEDB_*` variable, `DATABASE_URL` and the providers' `*_API_KEY` can be read from a
+file instead (Docker or Kubernetes secrets): `BASEDB_ENCRYPTION_KEY_FILE=/run/secrets/key`.
+The variable itself, when set, wins.
+
 ### Optional
 
 | Variable | Purpose |
@@ -203,14 +208,30 @@ version rather than following `latest`.
 | `BASEDB_GEOCODER_URL`, `BASEDB_MAP_TILES` | your own address search and map tiles; `off` keeps addresses on the instance |
 | `BASEDB_TEMPLATES_URL` | where the template gallery is read from; `off` for none |
 | `BASEDB_MIGRATE` | `0`: this instance does not update the catalog, it only checks it |
+| `BASEDB_INSIGHTS_URL`, `BASEDB_INSIGHTS_PUBLIC_URL`, `BASEDB_INSIGHTS_SECRET` | link an insights instance (analyses, single sign-on): its API as the server reaches it, its address in the browser, and their shared secret (32 characters or more) |
+| `BASEDB_INSIGHTS_DATABASE_URL` | basedb's database as insights' Trino reaches it, without credentials (otherwise `DATABASE_URL`'s) |
+| `BASEDB_INSIGHTS`, `BASEDB_INSIGHTS_HOST` | `1`: insights served under `/insights` on the same port, relayed to the host running its image (`insights` by default) — `1` by default in the repository's `docker-compose.yml`, where `0` also leaves its services out |
+
+
+This image is basedb alone. The repository's `docker-compose.yml` installs insights beside it
+by default — its image `eodia/insights:${INSIGHTS_VERSION}` and Trino as two more services —
+which basedb relays under `/insights`, signing its users in; a new insights is a new
+`INSIGHTS_VERSION`.
+`BASEDB_INSIGHTS=0` leaves it out: its services start no container, and the interface hides
+its dashboards.
+Built from the repository with the target `basedb-insights`
+(`docker build --target basedb-insights .`, on `eodia/insights:${INSIGHTS_VERSION}` —
+0.7.0 or later), the image runs insights in the same container instead.
 
 The full list, with defaults:
 [Environment variables](https://eodia.github.io/basedb/en/hebergement/variables/).
 
 ## In production
 
-The repository's `docker-compose.yml` — PostgreSQL, basedb and, with the `https` profile,
-Caddy for the certificates — needs no clone. You need a server and a domain name pointing to
+The repository's `docker-compose.yml` — PostgreSQL, basedb, insights and, with the `https`
+profile, Caddy for the certificates — needs no clone, and no secret to make up: the database
+password, the instance key and insights' secrets are drawn on the first start and kept in the
+`secrets` volume (a value set in `.env` wins, and is written there). You need a server and a domain name pointing to
 it, ports 80 and 443 open:
 
 ```bash
@@ -221,11 +242,11 @@ cat > .env <<EOF
 BASEDB_VERSION=0.6.1
 BASEDB_DOMAIN=basedb.example.com
 BASEDB_PUBLIC_URL=https://basedb.example.com
-POSTGRES_PASSWORD=$(openssl rand -hex 16)
-BASEDB_ENCRYPTION_KEY=$(openssl rand -base64 32)
 EOF
 
 docker compose --profile https up -d
+# the instance key, to keep apart from the database's backups
+docker compose exec basedb cat /run/basedb-secrets/BASEDB_ENCRYPTION_KEY
 ```
 
 Every other variable is described in

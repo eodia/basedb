@@ -1,5 +1,6 @@
 'use client'
 
+import { ChevronsUpDown, LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -19,7 +20,6 @@ import { api } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { type ThemePreference, useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import { ChevronsUpDown, LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react'
 
 /**
  * The profile, bottom-left — the one corner of the screen that is about the reader

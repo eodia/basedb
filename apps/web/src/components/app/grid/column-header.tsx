@@ -1,5 +1,20 @@
 'use client'
 
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Eye,
+  EyeOff,
+  Filter,
+  GripVertical,
+  MoveHorizontal,
+  Pin,
+  PinOff,
+} from 'lucide-react'
+import { useCallback, useRef } from 'react'
 import { hasDescription } from '@/components/app/description'
 import { FieldIcon, shownFormat } from '@/components/app/field-icon'
 import {
@@ -16,21 +31,6 @@ import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import type { SortTerm } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Eye,
-  EyeOff,
-  Filter,
-  GripVertical,
-  MoveHorizontal,
-  Pin,
-  PinOff,
-} from 'lucide-react'
-import { useCallback, useRef } from 'react'
 
 /**
  * A column header — chapter 11 §1.3 and §1.4.
@@ -147,6 +147,7 @@ export function ColumnHeader({
             stickyLeft !== null && 'border-r-primary/25',
           )}
         >
+          {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: the sortable attributes make it a button */}
           <span
             {...attributes}
             {...listeners}

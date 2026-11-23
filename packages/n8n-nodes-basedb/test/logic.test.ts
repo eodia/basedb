@@ -1,11 +1,11 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
-  type MetaTable,
   columnsOf,
   eventsFor,
   freshRows,
   literal,
+  type MetaTable,
   matchFilter,
   pollFilter,
   toWrite,

@@ -1,0 +1,19 @@
+[package]
+name = "basedb-web"
+description = "L'interface de basedb sans Node à l'exécution : sert l'export statique d'apps/web et fait par requête ce que faisait le serveur de Next."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "basedb_web"
+
+[dependencies]
+basedb_contracts.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+bytes.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+form_urlencoded.workspace = true

@@ -2050,11 +2050,6 @@ export default {
 		download: 'JSON letöltése',
 		downloadNote: 'Hogy importálja a példányába, vagy átalakítsa, mielőtt a katalógusba javasolná.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Irányítópult</strong>: „{label}” – {blocks}',
-		blocks: {
-			one: '{n} blokk',
-			other: '{n} blokk',
-		},
 		automation: '<strong>Automatizálás</strong>: „{label}”',
 		yes: 'Igen',
 		no: 'Nem',

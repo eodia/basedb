@@ -1,37 +1,6 @@
 'use client'
 
 import {
-  STEP_ICONS,
-  STEP_TONES,
-  TRIGGER_ICONS,
-  TRIGGER_TONE,
-} from '@/components/app/automation-flow'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Kbd } from '@/components/ui/kbd'
-import type { AutomationTriggerKind } from '@/lib/api/client'
-import type { Slot } from '@/lib/automation-layout'
-import { type PickerEntry, pickerMatches } from '@/lib/automation-picker'
-import {
-  type Draft,
-  STEP_CATEGORIES,
-  STEP_DESCRIPTIONS,
-  STEP_HINTS,
-  STEP_KEYWORDS,
-  STEP_LABELS,
-  type StepKind,
-  TRIGGER_CATEGORIES,
-  TRIGGER_DESCRIPTIONS,
-  TRIGGER_HINTS,
-  TRIGGER_KEYWORDS,
-  TRIGGER_LABELS,
-  slotCaption,
-  unavailableSteps,
-} from '@/lib/automations'
-import { $t } from '@/lib/i18n'
-import { runsOf } from '@/lib/search'
-import { cn } from '@/lib/utils'
-import {
   Check,
   Clock,
   CornerDownLeft,
@@ -56,6 +25,37 @@ import {
   useRef,
   useState,
 } from 'react'
+import {
+  STEP_ICONS,
+  STEP_TONES,
+  TRIGGER_ICONS,
+  TRIGGER_TONE,
+} from '@/components/app/automation-flow'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Kbd } from '@/components/ui/kbd'
+import type { AutomationTriggerKind } from '@/lib/api/client'
+import type { Slot } from '@/lib/automation-layout'
+import { type PickerEntry, pickerMatches } from '@/lib/automation-picker'
+import {
+  type Draft,
+  STEP_CATEGORIES,
+  STEP_DESCRIPTIONS,
+  STEP_HINTS,
+  STEP_KEYWORDS,
+  STEP_LABELS,
+  type StepKind,
+  slotCaption,
+  TRIGGER_CATEGORIES,
+  TRIGGER_DESCRIPTIONS,
+  TRIGGER_HINTS,
+  TRIGGER_KEYWORDS,
+  TRIGGER_LABELS,
+  unavailableSteps,
+} from '@/lib/automations'
+import { $t } from '@/lib/i18n'
+import { runsOf } from '@/lib/search'
+import { cn } from '@/lib/utils'
 
 /**
  * The pickers of an automation's editor — what step to add, what sets it off. One dialog,

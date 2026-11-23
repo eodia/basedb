@@ -1,5 +1,29 @@
 'use client'
 
+import { labelKey, type Template } from '@basedb/contracts'
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Download,
+  FileJson,
+  Globe,
+  LayoutGrid,
+  Link2,
+  Loader2,
+  RefreshCw,
+  Search,
+  Server,
+  Sigma,
+  Sparkles,
+  Trash2,
+  Upload,
+  Wand2,
+  X,
+  Zap,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,45 +41,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
+  api,
   type Me,
   type TemplateCatalog,
   type TemplateDraft,
   type TemplateItem,
   type TemplateSource,
-  api,
 } from '@/lib/api/client'
 import { copy, download } from '@/lib/export'
-import { $t, $tp } from '@/lib/i18n'
+import { $t, $tp, formatCount } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { optionIcon } from '@/lib/option-icons'
 import { aiFieldsOf, stepText, warningsOf } from '@/lib/templates'
 import { cn } from '@/lib/utils'
 import { KIND_INFO } from '@/lib/views'
-import { type Template, labelKey } from '@basedb/contracts'
-import {
-  ArrowLeft,
-  Check,
-  Copy,
-  Download,
-  FileJson,
-  Globe,
-  LayoutDashboard,
-  LayoutGrid,
-  Link2,
-  Loader2,
-  RefreshCw,
-  Search,
-  Server,
-  Sigma,
-  Sparkles,
-  Trash2,
-  Upload,
-  Wand2,
-  X,
-  Zap,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * The gallery of base templates — chapter 20, chapter 11 §5.5. What the instance offers
@@ -86,7 +85,11 @@ function TemplateIcon({
   icon,
   color,
   className,
-}: { icon?: string | null; color?: string | null; className?: string }) {
+}: {
+  icon?: string | null
+  color?: string | null
+  className?: string
+}) {
   const Icon = optionIcon(icon)?.Icon ?? LayoutGrid
   return (
     <span
@@ -143,7 +146,6 @@ function summaryOf(template: Template): TemplateItem['counts'] {
     fields: template.tables.reduce((n, t) => n + t.fields.length, 0),
     rows: Object.values(template.rows).reduce((n, r) => n + r.length, 0),
     views: template.views.length,
-    dashboards: template.dashboards.length,
     automations: template.automations.length,
     ai_fields: template.tables.reduce(
       (n, t) => n + t.fields.filter((f) => f.ai !== undefined).length,
@@ -313,57 +315,13 @@ export function TemplateGallery({
 
         {/* The sentence to the AI. */}
         <div className="border-b bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-transparent px-6 py-3">
-          <form
-            className="group relative rounded-full p-0.5"
-            onSubmit={(e) => {
-              e.preventDefault()
-              void propose(prompt)
-            }}
-          >
-            {/* The edge glows as on the site's page, its halo brighter while typing; the
-                colours turn faster while the AI thinks. */}
-            <span
-              aria-hidden
-              className={cn(
-                'bg-ai-edge absolute inset-0 rounded-full opacity-35 blur-md transition-opacity group-focus-within:opacity-70 animate-ai-turn motion-reduce:animate-none',
-                drafting && 'opacity-70 [animation-duration:1.5s]',
-              )}
-            />
-            <span
-              aria-hidden
-              className={cn(
-                'bg-ai-edge absolute inset-0 rounded-full animate-ai-turn motion-reduce:animate-none',
-                drafting && '[animation-duration:1.5s]',
-              )}
-            />
-            <div className="relative flex items-center gap-2 rounded-full bg-background py-1 pr-1 pl-4">
-              <Sparkles className="size-5 shrink-0 text-violet-600 dark:text-violet-400" />
-              <Input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={$t(
-                  'Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »',
-                )}
-                aria-label={$t('Décrire le besoin à l’IA')}
-                disabled={drafting}
-                className="h-9 flex-1 border-0 px-1 shadow-none focus-visible:ring-0 focus-visible:outline-none"
-              />
-              <Button
-                type="submit"
-                disabled={drafting || prompt.trim() === ''}
-                className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/85"
-              >
-                {drafting ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Wand2 className="size-4" />
-                )}
-                {drafting
-                  ? $t('Proposition en cours… {elapsed} s', { elapsed })
-                  : $t('Proposer avec l’IA')}
-              </Button>
-            </div>
-          </form>
+          <AiRequest
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={() => void propose(prompt)}
+            drafting={drafting}
+            elapsed={elapsed}
+          />
           {draftError !== null && (
             <p className="mt-1.5 pl-11 text-sm text-destructive">{draftError}</p>
           )}
@@ -526,7 +484,11 @@ function TemplateCard({
   item,
   busy,
   onOpen,
-}: { readonly item: TemplateItem; readonly busy: boolean; readonly onOpen: () => void }) {
+}: {
+  readonly item: TemplateItem
+  readonly busy: boolean
+  readonly onOpen: () => void
+}) {
   return (
     <button
       type="button"
@@ -567,7 +529,11 @@ function Section({
   title,
   icon,
   children,
-}: { readonly title: string; readonly icon: ReactNode; readonly children: ReactNode }) {
+}: {
+  readonly title: string
+  readonly icon: ReactNode
+  readonly children: ReactNode
+}) {
   return (
     <section className="space-y-2">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold">
@@ -794,43 +760,22 @@ function TemplateDetail({
           </Section>
         )}
 
-        {(template.dashboards.length > 0 || template.automations.length > 0) && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {template.dashboards.length > 0 && (
-              <Section
-                title={$t('Tableaux de bord')}
-                icon={<LayoutDashboard className="size-4 text-muted-foreground" />}
-              >
-                <ul className="space-y-1 text-sm">
-                  {template.dashboards.map((d) => (
-                    <li key={d.label}>
-                      {d.label}{' '}
-                      <span className="text-xs text-muted-foreground">
-                        — {$tp(d.blocks.length, '{count} bloc', '{count} blocs')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
-            {template.automations.length > 0 && (
-              <Section
-                title={$t('Automatisations')}
-                icon={<Zap className="size-4 text-muted-foreground" />}
-              >
-                <ul className="space-y-1 text-sm">
-                  {template.automations.map((a) => (
-                    <li key={a.label}>
-                      {a.label}
-                      {a.description !== undefined && (
-                        <span className="text-xs text-muted-foreground"> — {a.description}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
-          </div>
+        {template.automations.length > 0 && (
+          <Section
+            title={$t('Automatisations')}
+            icon={<Zap className="size-4 text-muted-foreground" />}
+          >
+            <ul className="space-y-1 text-sm">
+              {template.automations.map((a) => (
+                <li key={a.label}>
+                  {a.label}
+                  {a.description !== undefined && (
+                    <span className="text-xs text-muted-foreground"> — {a.description}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Section>
         )}
       </div>
 
@@ -850,10 +795,151 @@ function TemplateDetail({
   )
 }
 
+/** What the server takes of a request to the AI (`templates/draft.ts`). */
+const MAX_REQUEST_CHARS = 2000
+
+/**
+ * The sentence to the AI: one line at rest, so the gallery stays in view; a click opens it
+ * into a large box, for a need described at length. It folds back once left — its text
+ * kept, the first words in view.
+ */
+function AiRequest({
+  value,
+  onChange,
+  onSubmit,
+  drafting,
+  elapsed,
+}: {
+  readonly value: string
+  readonly onChange: (value: string) => void
+  readonly onSubmit: () => void
+  readonly drafting: boolean
+  readonly elapsed: number
+}) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLTextAreaElement>(null)
+  const expanded = open || drafting
+
+  // Opened by a click on the line: the caret where the text ends, as if one kept typing.
+  useEffect(() => {
+    if (!open) return
+    const area = box.current
+    if (area === null) return
+    area.focus()
+    area.setSelectionRange(area.value.length, area.value.length)
+  }, [open])
+
+  const canSend = !drafting && value.trim() !== '' && value.length <= MAX_REQUEST_CHARS
+  const placeholder = $t(
+    'Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »',
+  )
+  const submit = (
+    <Button
+      type="submit"
+      disabled={!canSend}
+      className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/85"
+    >
+      {drafting ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
+      {drafting ? $t('Proposition en cours… {elapsed} s', { elapsed }) : $t('Proposer avec l’IA')}
+    </Button>
+  )
+
+  return (
+    <form
+      className={cn(
+        'group relative p-0.5 transition-[border-radius]',
+        expanded ? 'rounded-2xl' : 'rounded-full',
+      )}
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!canSend) return
+        setOpen(false)
+        onSubmit()
+      }}
+      onBlur={(e) => {
+        // Leaving for the button below is still writing here.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
+      }}
+    >
+      {/* The edge glows as on the site's page, its halo brighter while typing; the
+          colours turn faster while the AI thinks. */}
+      <span
+        aria-hidden
+        className={cn(
+          'bg-ai-edge absolute inset-0 opacity-35 blur-md transition-opacity group-focus-within:opacity-70 animate-ai-turn motion-reduce:animate-none',
+          expanded ? 'rounded-2xl' : 'rounded-full',
+          drafting && 'opacity-70 [animation-duration:1.5s]',
+        )}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          'bg-ai-edge absolute inset-0 animate-ai-turn motion-reduce:animate-none',
+          expanded ? 'rounded-2xl' : 'rounded-full',
+          drafting && '[animation-duration:1.5s]',
+        )}
+      />
+      {expanded ? (
+        <div className="relative rounded-[calc(1rem-2px)] bg-background p-3 pb-2">
+          <div className="flex items-start gap-2">
+            <Sparkles className="mt-1.5 size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+            <Textarea
+              ref={box}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={(e) => {
+                // Ctrl+Entrée sends: in a long text, Entrée is a new paragraph.
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault()
+                  e.currentTarget.form?.requestSubmit()
+                }
+              }}
+              placeholder={placeholder}
+              aria-label={$t('Décrire le besoin à l’IA')}
+              disabled={drafting}
+              rows={8}
+              className="max-h-[40vh] min-h-40 flex-1 resize-y border-0 px-1 text-sm shadow-none focus-visible:ring-0 focus-visible:outline-none"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-3 pl-7">
+            <span className="text-xs text-muted-foreground">{$t('Ctrl+Entrée pour envoyer')}</span>
+            <span
+              className={cn(
+                'ml-auto text-xs tabular-nums',
+                value.length > MAX_REQUEST_CHARS ? 'text-destructive' : 'text-muted-foreground',
+              )}
+            >
+              {`${formatCount(value.length)} / ${formatCount(MAX_REQUEST_CHARS)}`}
+            </span>
+            {submit}
+          </div>
+        </div>
+      ) : (
+        <div className="relative flex items-center gap-2 rounded-full bg-background py-1 pr-1 pl-4">
+          <Sparkles className="size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <Input
+            value={value.replace(/\s+/g, ' ')}
+            readOnly
+            onFocus={() => setOpen(true)}
+            onClick={() => setOpen(true)}
+            placeholder={placeholder}
+            aria-label={$t('Décrire le besoin à l’IA')}
+            className="h-9 flex-1 cursor-text truncate border-0 px-1 shadow-none focus-visible:ring-0 focus-visible:outline-none"
+          />
+          {submit}
+        </div>
+      )}
+    </form>
+  )
+}
+
 function Refine({
   drafting,
   onRefine,
-}: { readonly drafting: boolean; readonly onRefine: (request: string) => void }) {
+}: {
+  readonly drafting: boolean
+  readonly onRefine: (request: string) => void
+}) {
   const [text, setText] = useState('')
   return (
     <form
@@ -1046,6 +1132,7 @@ function CreatePanel({
         >
           {steps.map((step, index) => (
             <p
+              // biome-ignore lint/suspicious/noArrayIndexKey: an append-only log, never reordered
               key={`${index}:${step}`}
               className={cn(
                 'flex items-center gap-1.5 py-0.5',

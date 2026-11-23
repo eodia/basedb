@@ -1,5 +1,7 @@
 'use client'
 
+import { ChevronDown, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,8 +15,6 @@ import { Hint } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { parseTemplate, templateToLabels, templateToNames } from '@/lib/card-template'
 import { $t } from '@/lib/i18n'
-import { ChevronDown, Plus } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 
 /**
  * A text with variables, written with the fields' LABELS — `{{Date de livraison}}` — and

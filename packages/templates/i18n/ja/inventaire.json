@@ -74,13 +74,6 @@
   "Par catégorie": "カテゴリー別",
   "Journal": "履歴",
   "Calendrier": "カレンダー",
-  "Stocks": "在庫状況",
-  "Articles à commander": "発注が必要な商品",
-  "Articles suivis": "管理対象の商品",
-  "Sorties ce mois-ci": "今月の出庫",
-  "Articles par catégorie": "カテゴリー別の商品数",
-  "Mouvements par type": "種別ごとの入出庫数",
-  "Derniers mouvements": "最近の入出庫",
   "Grosse sortie": "大口出庫",
   "Prévient quand une sortie dépasse 50 unités.": "出庫が50個を超えたときに通知します。",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "大口出庫：{{Libellé}}（{{Quantité}}）",
@@ -92,5 +85,6 @@
   "Formules": "数式",
   "Galerie": "ギャラリー",
   "IA": "AI",
+  "Stocks": "在庫状況",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "在庫商品、仕入先、入庫・出庫の記録。"
 }

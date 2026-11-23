@@ -13,7 +13,9 @@
 .automation-flow .automation-flow__link {
   stroke: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
   stroke-width: 1.5;
-  transition: opacity 150ms, stroke 150ms;
+  transition:
+    opacity 150ms,
+    stroke 150ms;
 }
 
 .automation-flow .automation-flow__link--taken {

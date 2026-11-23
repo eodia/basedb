@@ -1,5 +1,24 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { ArrowDown, ArrowUp, ChevronRight, Filter, GripVertical, Lock } from 'lucide-react'
+import { type ReactNode, useEffect, useId, useMemo, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { placeholderFor } from '@/components/app/forms/answers'
 import { AnswerKeyEditor, GradingSettings } from '@/components/app/forms/quiz-settings'
@@ -8,8 +27,8 @@ import {
   AlignPicker,
   ConditionEditor,
   FontPicker,
-  ThemeGallery,
   keepConditions,
+  ThemeGallery,
 } from '@/components/app/forms/settings'
 import { TemplateEditor } from '@/components/app/views/template-editor'
 import { Button } from '@/components/ui/button'
@@ -34,46 +53,27 @@ import { $t } from '@/lib/i18n'
 import type { ViewState } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
-  type DataSpec,
-  type FormQuestion,
-  KIND_INFO,
-  VIEW_KINDS,
   addressFields,
   askableFields,
   businessFields,
+  type DataSpec,
   dateFields,
   defaultSpec,
+  type FormQuestion,
   formSpec,
   freeLabel,
   gridSpecOf,
   groupFields,
   isGraded,
+  KIND_INFO,
   listGroupFields,
   numberFields,
   pictureFields,
   selectFields,
   selfLinkFields,
   unavailableReason,
+  VIEW_KINDS,
 } from '@/lib/views'
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { ArrowDown, ArrowUp, ChevronRight, Filter, GripVertical, Lock } from 'lucide-react'
-import { type ReactNode, useEffect, useId, useMemo, useState } from 'react'
 
 /**
  * Creating a view, and configuring one — the same dialog (ch. 11 §1.4).

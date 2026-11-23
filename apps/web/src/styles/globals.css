@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@plugin 'tailwindcss-animate';
+@plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
 /* A short screen — a laptop at 720 px — where a tall composition has to tighten. */

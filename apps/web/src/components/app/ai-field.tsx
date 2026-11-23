@@ -1,5 +1,14 @@
 'use client'
 
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  CircleDashed,
+  Plus,
+  Sparkles,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,33 +30,24 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
-import { type AiFieldInput, type AiFieldStatus, type Field, api } from '@/lib/api/client'
+import { type AiFieldInput, type AiFieldStatus, api, type Field } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { reasonFor, sentenceFor } from '@/lib/messages'
 import {
+  cronOf,
   DAY_STEPS,
   DEFAULT_SCHEDULE,
-  type Frequency,
-  HOUR_STEPS,
-  MINUTE_STEPS,
-  type ScheduleDraft,
-  WEEKDAYS,
-  cronOf,
   describe,
   draftOf,
+  type Frequency,
+  HOUR_STEPS,
   localTimezone,
+  MINUTE_STEPS,
   paceOf,
+  type ScheduleDraft,
+  WEEKDAYS,
 } from '@/lib/schedule'
 import { cn } from '@/lib/utils'
-import {
-  AlertTriangle,
-  CalendarClock,
-  ChevronDown,
-  CircleDashed,
-  Plus,
-  Sparkles,
-} from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The AI option of a field, as a person sets it — chapter 12 §1.5, chapter 04 §7 bis.

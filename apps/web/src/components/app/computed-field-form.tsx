@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Badge } from '@/components/ui/badge'
 import { Choice } from '@/components/ui/choice'
@@ -15,7 +16,6 @@ import { Hint } from '@/components/ui/tooltip'
 import type { Field, RollupInput, Table } from '@/lib/api/client'
 import { AGGREGATE_NAMES, effectiveKind } from '@/lib/computed'
 import { $t, locale } from '@/lib/i18n'
-import { useRef } from 'react'
 
 /**
  * The settings of a computed field, in the « Nouveau champ » dialog — chapter 04 §7 and

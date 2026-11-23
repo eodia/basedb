@@ -1,11 +1,11 @@
 'use client'
 
+import { Link2, Search, Table2 } from 'lucide-react'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import type { JoinSuggestion } from '@/lib/analytics/model'
 import type { Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import { Link2, Search, Table2 } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * The tables of a base, to pick one — searched as one types. For a join, the tables the

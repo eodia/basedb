@@ -1,5 +1,8 @@
 'use client'
 
+import { Ellipsis, ExternalLink, Loader2, Pencil, Plus, Trash2, Zap } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/app/admin/users-tab'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
@@ -24,18 +27,15 @@ import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
   type Automation,
+  api,
   type Table,
   type TableButton,
   type TableButtonInput,
-  api,
 } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { PRESET_COLORS } from '@/lib/options'
 import { cn } from '@/lib/utils'
-import { Ellipsis, ExternalLink, Loader2, Pencil, Plus, Trash2, Zap } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * The buttons of a table's toolbar — chapter 11 §1.6. They belong to the table: every grid

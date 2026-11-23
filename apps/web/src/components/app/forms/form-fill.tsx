@@ -1,26 +1,9 @@
 'use client'
 
-import { hasDescription } from '@/components/app/description'
-import type { Upload } from '@/components/app/files'
-import type { Row } from '@/components/app/grid/cell'
-import type { SearchLink } from '@/components/app/pickers'
-import { PanelField, emptyDraft, prefillOf, writeValues } from '@/components/app/record-panel'
-import { Unavailable } from '@/components/app/views/kanban-view'
-import {
-  type Field,
-  type LinkOption,
-  type QuizGrade,
-  type QuizOutcome,
-  filesOf,
-} from '@/lib/api/client'
-import { $t, $tp, intlLocale } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { cn } from '@/lib/utils'
-import { type FormQuestion, type FormSpec, isGraded } from '@/lib/views'
 import {
   type FormCondition,
-  type QuizAnswer,
   isRightAnswer,
+  type QuizAnswer,
   quizPassed,
   quizPercent,
   scoreQuiz,
@@ -39,6 +22,23 @@ import {
   Send,
 } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { hasDescription } from '@/components/app/description'
+import type { Upload } from '@/components/app/files'
+import type { Row } from '@/components/app/grid/cell'
+import type { SearchLink } from '@/components/app/pickers'
+import { emptyDraft, PanelField, prefillOf, writeValues } from '@/components/app/record-panel'
+import { Unavailable } from '@/components/app/views/kanban-view'
+import {
+  type Field,
+  filesOf,
+  type LinkOption,
+  type QuizGrade,
+  type QuizOutcome,
+} from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
+import { type FormQuestion, type FormSpec, isGraded } from '@/lib/views'
 import {
   type AnswerWidget,
   answerProblem,
@@ -64,9 +64,9 @@ import {
   Recap,
   RunningScore,
   ScoreRing,
-  Verdict,
   scoreCelebrated,
   scoreHeadline,
+  Verdict,
 } from './quiz'
 import { lookStyle } from './theme'
 
@@ -748,6 +748,7 @@ export function FormFill({
         </div>
       )}
 
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for Enter bubbling up from the answer fields inside */}
       <div
         className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-discret"
         onKeyDown={(e) => {
@@ -1003,7 +1004,7 @@ function Heading({
         >
           {label}
           {required && (
-            <span className="ml-1 text-(--fm-accent)" aria-label={$t('obligatoire')}>
+            <span role="img" className="ml-1 text-(--fm-accent)" aria-label={$t('obligatoire')}>
               *
             </span>
           )}

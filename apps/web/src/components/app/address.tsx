@@ -1,13 +1,13 @@
 'use client'
 
+import { Loader2, MapPin, Search } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Hint } from '@/components/ui/tooltip'
-import { type Place, api } from '@/lib/api/client'
+import { api, type Place } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Loader2, MapPin, Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 
 /**
  * An address — a short text in the « Adresse » format (chapter 04 §2.11): written as it is,
@@ -34,7 +34,10 @@ function geocodingOffered(): Promise<boolean> {
 export function AddressLink({
   value,
   className,
-}: { readonly value: string; readonly className?: string }) {
+}: {
+  readonly value: string
+  readonly className?: string
+}) {
   return (
     <Hint label={$t('Voir sur la carte')}>
       <a

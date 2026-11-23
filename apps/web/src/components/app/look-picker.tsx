@@ -1,16 +1,16 @@
 'use client'
 
-import { OptionGlyph, hasLook } from '@/components/app/option-badge'
+import { ImageUp, Palette, Pipette, Search, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { hasLook, OptionGlyph } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { OPTION_ICONS } from '@/lib/option-icons'
-import { MAX_IMAGE_CHARS, PRESET_COLORS, normalizeHex, shrinkImage } from '@/lib/options'
+import { MAX_IMAGE_CHARS, normalizeHex, PRESET_COLORS, shrinkImage } from '@/lib/options'
 import { cn } from '@/lib/utils'
-import { ImageUp, Palette, Pipette, Search, X } from 'lucide-react'
-import { useRef, useState } from 'react'
 
 /**
  * How a thing looks — a choice of a list, a base, a table — and the button that edits it.
@@ -291,7 +291,7 @@ function ImagePane({
     }
   }
 
-  const useUrl = () => {
+  const applyUrl = () => {
     const text = url.trim()
     if (!/^https:\/\/\S+$/i.test(text)) return setError('Une adresse https://… est attendue.')
     if (text.length > MAX_IMAGE_CHARS) return setError($t('Adresse trop longue.'))
@@ -327,7 +327,7 @@ function ImagePane({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              useUrl()
+              applyUrl()
             }
           }}
           placeholder="ou une adresse https://…"
@@ -338,7 +338,7 @@ function ImagePane({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={useUrl}
+          onClick={applyUrl}
           disabled={url.trim() === ''}
         >
           {$t('Utiliser')}

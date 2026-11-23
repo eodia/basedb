@@ -43,7 +43,7 @@ Az a kliens, amely csak helyi programokat tud indítani (stdio), a tároló köz
 csatlakozik; ez a tokent a `--token-env` által megnevezett változóból olvassa:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

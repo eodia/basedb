@@ -8,15 +8,15 @@ import type {
 } from '@/lib/api/client'
 import { $t, locale } from '@/lib/i18n'
 import {
+  cite,
   DEFAULT_FOOTER,
   DEFAULT_HEADER,
   DEFAULT_THEME,
-  type RowsChoice,
-  cite,
   displayOf,
   escapeHtml,
   kindOf,
   numeric,
+  type RowsChoice,
   rowsColumns,
   shown,
 } from './model'

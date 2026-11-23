@@ -1,5 +1,14 @@
 'use client'
 
+import {
+  type Constraint,
+  type SqlQuery,
+  type SqlVariable,
+  type SqlVariableType,
+  sqlVariableNames,
+} from '@basedb/contracts'
+import { CalendarDays, Loader2, Play, Wand2 } from 'lucide-react'
+import { useRef } from 'react'
 import { PeriodPicker } from '@/components/app/analytics/filter-editor'
 import { SqlEditor } from '@/components/app/sql-editor'
 import { Button } from '@/components/ui/button'
@@ -11,21 +20,11 @@ import { Hint } from '@/components/ui/tooltip'
 import { describeDate } from '@/lib/analytics/model'
 import type { DescribedBase } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import {
-  type Constraint,
-  type SqlQuery,
-  type SqlVariable,
-  type SqlVariableType,
-  sqlVariableNames,
-} from '@basedb/contracts'
-import { CalendarDays, Loader2, Play, Wand2 } from 'lucide-react'
-import { useRef } from 'react'
 
 /**
  * A SQL question — chapter 18 §3.3: a statement, its variables written `{{nom}}`, a part to
  * drop when one has no value between `[[` and `]]`. A variable is text, a number, a day, or a
- * whole condition on a column — what lets a dashboard's filter narrow a SQL question like any
- * other.
+ * whole condition on a column — what lets a filter narrow a SQL question like any other.
  *
  * Saved, it runs read only with the reader's rights. A draft, for whoever manages the base,
  * keeps the console's reach — writes, several statements — and the editor says which of the two

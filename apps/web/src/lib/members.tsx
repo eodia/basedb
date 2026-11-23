@@ -1,7 +1,7 @@
 'use client'
 
-import { type Member, api } from '@/lib/api/client'
-import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
+import { api, type Member } from '@/lib/api/client'
 
 /**
  * The people of the tenant — what a `user` field names (chapter 04 §2.10).

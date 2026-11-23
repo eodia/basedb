@@ -2,26 +2,21 @@ import { describe, expect, it } from 'vitest'
 import type { Automation, AutomationStep, DescribedBase, Field } from '../../src/lib/api/client'
 import {
   END_NODE,
-  GAP_Y,
-  STEP_SIZE,
-  TRIGGER_NODE,
   frameOf,
+  GAP_Y,
   layoutFlow,
   mergeOf,
+  STEP_SIZE,
+  TRIGGER_NODE,
 } from '../../src/lib/automation-layout'
 import { pickerMatches } from '../../src/lib/automation-picker'
 import {
-  type Draft,
-  type DraftPath,
-  type DraftStep,
-  STEP_CATEGORIES,
-  STEP_HINTS,
-  STEP_KEYWORDS,
-  STEP_LABELS,
-  type StepKind,
   buttonUrl,
   changeableRows,
   citeGroups,
+  type Draft,
+  type DraftPath,
+  type DraftStep,
   draftOf,
   draftOfDefinition,
   emptyDraft,
@@ -46,6 +41,11 @@ import {
   runSentence,
   runStepSentence,
   runStepsById,
+  STEP_CATEGORIES,
+  STEP_HINTS,
+  STEP_KEYWORDS,
+  STEP_LABELS,
+  type StepKind,
   slotCaption,
   stepProblem,
   stepSummary,
@@ -612,7 +612,8 @@ describe('a loop', () => {
           : { ...s, table: 'journal' },
       ),
     )
-    expect((inputOf(draft).actions?.[0] as { steps: unknown[] }).steps[1]).toMatchObject({
+    const loopStep = inputOf(draft).actions?.[0] as { steps: unknown[] }
+    expect(loopStep.steps[1]).toMatchObject({
       kind: 'branch',
       paths: [{ id: 'c1', steps: [{ id: 'e4', table: 'journal' }] }],
     })

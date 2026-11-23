@@ -1,5 +1,7 @@
 'use client'
 
+import { Database, Lock, type LucideIcon, Users } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,11 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type QueryAudience, api } from '@/lib/api/client'
+import { api, type QueryAudience } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { Database, Lock, type LucideIcon, Users } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * Who sees a question written in SQL — a query, as the navigation lists it (chapter 11 §1.7).

@@ -1,22 +1,21 @@
 import {
+  citedInText,
+  labelKey,
   type ResolvedField,
+  resolveTemplateDate,
   type Template,
   type TemplateAutomation,
-  type TemplateBlock,
   type TemplateField,
   type TemplateOption,
   type TemplateView,
-  VIEW_FIELD_KEYS,
-  citedInText,
-  labelKey,
-  resolveTemplateDate,
   translateFilter,
+  VIEW_FIELD_KEYS,
 } from './templates.js'
 
 /**
  * Building a template into a base — chapter 20 §4, in its order: the tables, their fields,
  * the relations, what is computed, the display columns, the sample rows, the buttons after
- * their automations, the obligations, then the views, the dashboards and the automations.
+ * their automations, the obligations, then the views and the automations.
  *
  * The template names everything by label and by keys of its own; the base by physical
  * names and identifiers. This module is where one becomes the other, and it does so
@@ -122,11 +121,6 @@ export interface TemplateOperations {
       readonly spec: Record<string, unknown>
     },
   ): Promise<void>
-  createDashboard(input: {
-    readonly label: string
-    readonly description: string | null
-    readonly blocks: readonly Record<string, unknown>[]
-  }): Promise<void>
   /** An automation as `POST …/automations` takes it; its identifier. */
   createAutomation(input: Record<string, unknown>): Promise<{ readonly id: string }>
   /** Whether an error says the AI cannot compute a field here — not a failure of the step. */
@@ -150,7 +144,6 @@ export type TemplateStep =
   | { readonly kind: 'automation'; readonly label: string }
   | { readonly kind: 'button'; readonly label: string }
   | { readonly kind: 'view'; readonly label: string }
-  | { readonly kind: 'dashboard'; readonly label: string }
 
 export interface TemplateApplyOptions {
   readonly onStep?: (step: TemplateStep) => void
@@ -319,58 +312,6 @@ export function specFor(view: TemplateView, table: BuiltTable): Record<string, u
   return spec
 }
 
-/** A dashboard block as the API takes it: the table by identifier, its fields by name. */
-export function blockFor(block: TemplateBlock, built: Built): Record<string, unknown> | null {
-  if (block.kind === 'text')
-    return { kind: 'text', width: block.width, title: block.title, body: block.body }
-  const table = built.get(block.table)
-  if (table === undefined) return null
-  const name = (label: string | null) =>
-    label === null ? null : (fieldOf(table, label)?.name ?? null)
-  const filter = filterFor(block.filter, table)
-  switch (block.kind) {
-    case 'number':
-      return {
-        kind: 'number',
-        width: block.width,
-        title: block.title,
-        table: table.id,
-        aggregate: block.aggregate,
-        field: name(block.field),
-        filter,
-      }
-    case 'chart': {
-      const group = name(block.group_by)
-      return group === null
-        ? null
-        : {
-            kind: 'chart',
-            width: block.width,
-            title: block.title,
-            table: table.id,
-            group_by: group,
-            filter,
-            style: block.style,
-          }
-    }
-    case 'list': {
-      const descending = block.sort.startsWith('-')
-      const sortName =
-        block.sort === '' ? null : name(descending ? block.sort.slice(1) : block.sort)
-      return {
-        kind: 'list',
-        width: block.width,
-        title: block.title,
-        table: table.id,
-        fields: block.fields.map(name).filter((f): f is string => f !== null),
-        filter,
-        sort: sortName === null ? '' : `${descending ? '-' : ''}${sortName}`,
-        limit: block.limit,
-      }
-    }
-  }
-}
-
 /** An automation as the API takes it; `me` stands for `$moi`. */
 export function automationFor(
   automation: TemplateAutomation,
@@ -415,6 +356,8 @@ export function automationFor(
             action.user_field === null ? null : (fieldOf(table, action.user_field)?.name ?? null),
           message: textFor(action.message, table),
         }
+      default:
+        return action satisfies never
     }
   })
   return {
@@ -832,7 +775,7 @@ export async function applyTemplate(
     }
   }
 
-  // 10. The views, the dashboards, the other automations.
+  // 10. The views, the other automations.
   for (const view of template.views) {
     const entry = built.get(view.table)
     if (entry === undefined) continue
@@ -842,17 +785,6 @@ export async function applyTemplate(
       kind: view.kind,
       description: view.description ?? null,
       spec: specFor(view, entry),
-    })
-  }
-  for (const dashboard of template.dashboards) {
-    onStep({ kind: 'dashboard', label: dashboard.label })
-    const blocks = dashboard.blocks
-      .map((b) => blockFor(b, built))
-      .filter((b): b is Record<string, unknown> => b !== null)
-    await operations.createDashboard({
-      label: dashboard.label,
-      description: dashboard.description ?? null,
-      blocks,
     })
   }
   for (const automation of template.automations.filter((a) => a.trigger.kind !== 'button')) {

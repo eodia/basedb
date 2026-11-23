@@ -1,23 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-  cardConstraints,
-  cardsFromBlocks,
-  citedNames,
-  flowLayout,
-  parameterFits,
   parameterHasValue,
   periodExpression,
-  questionCards,
   resolveDateExpression,
   resultNames,
   sqlVariableNames,
-  variableCard,
-  withoutVariables,
 } from '../src/analytics.js'
 
 /**
  * The vocabulary of chapter 18 that both sides compute: what a date expression covers, what
- * a result's columns are called, where the blocks of the first dashboards land.
+ * a result's columns are called, which variables a SQL question asks for.
  */
 
 // Wednesday 16 September 2026.
@@ -120,203 +112,14 @@ describe('a result', () => {
   it('finds its variables in a SQL text', () => {
     expect(sqlVariableNames('WHERE {{a}} AND x = {{ b }} [[AND {{a}}]]')).toEqual(['a', 'b'])
   })
-
-  it('ties a filter to columns of a kind it can read', () => {
-    expect(parameterFits('date', 'datetime')).toBe(true)
-    expect(parameterFits('date', 'number')).toBe(false)
-    expect(parameterFits('category', 'multi_select')).toBe(true)
-  })
 })
 
-describe('the blocks of the first dashboards', () => {
-  it('flow on the grid as they sat on three columns', () => {
-    expect(
-      flowLayout([
-        { w: 8, h: 4 },
-        { w: 16, h: 8 },
-        { w: 8, h: 4 },
-      ]).map(({ x, y }) => [x, y]),
-    ).toEqual([
-      [0, 0],
-      [8, 0],
-      [0, 8],
-    ])
-  })
-
-  it('become questions read the same way', () => {
-    const [number, chart, list, text] = cardsFromBlocks([
-      {
-        kind: 'number',
-        width: 1,
-        title: 'Total',
-        table: 't',
-        aggregate: 'sum',
-        field: 'montant',
-        filter: 'statut eq "fait"',
-      },
-      {
-        kind: 'chart',
-        width: 2,
-        title: '',
-        table: 't',
-        group_by: 'statut',
-        filter: '',
-        style: 'bar',
-      },
-      {
-        kind: 'list',
-        width: 3,
-        title: 'Dernières',
-        table: 't',
-        fields: ['nom'],
-        filter: '',
-        sort: '-_created_at',
-        limit: 10,
-      },
-      { kind: 'text', width: 1, title: '', body: '# Lire' },
-    ])
-    expect(number).toMatchObject({
-      x: 0,
-      w: 8,
-      query: {
-        filters: [{ expression: 'statut eq "fait"' }],
-        aggregations: [{ fn: 'sum', column: { field: 'montant' } }],
-      },
-      visualization: { type: 'scalar' },
-    })
-    expect(chart).toMatchObject({
-      x: 8,
-      w: 16,
-      query: {
-        breakouts: [{ field: 'statut' }],
-        sort: [{ target: { kind: 'aggregation', index: 0 }, desc: true }],
-      },
-      visualization: { type: 'row' },
-    })
-    expect(list).toMatchObject({
-      x: 0,
-      w: 24,
-      query: {
-        sort: [{ target: { kind: 'column', column: { field: '_created_at' } }, desc: true }],
-        limit: 10,
-      },
-    })
-    expect(text).toMatchObject({ kind: 'text', text: '# Lire' })
-  })
-})
-
-describe('the filters a card applies', () => {
-  const parameters = [
-    { id: 'p', label: 'Période', type: 'date' as const },
-    { id: 'n', label: 'Montant', type: 'number' as const, operator: 'gte' as const },
-    { id: 's', label: 'Statut', type: 'category' as const },
-  ]
-  const mappings = [
-    { parameter: 'p', target: { column: { field: 'jour' } } },
-    { parameter: 'n', target: { variable: 'seuil' } },
-    { parameter: 's', target: { column: { field: 'statut' } } },
-    { parameter: 'absent', target: { column: { field: 'x' } } },
-  ]
-
-  it('are the tied filters that say something, with their operator', () => {
-    expect(cardConstraints(mappings, parameters, { p: 'thisyear', n: [100], s: [] })).toEqual([
-      { target: { column: { field: 'jour' } }, type: 'date', value: 'thisyear' },
-      { target: { variable: 'seuil' }, type: 'number', operator: 'gte', value: [100] },
-    ])
-    expect(cardConstraints(undefined, parameters, { p: 'thisyear' })).toEqual([])
-  })
-
-  it('leave out an empty text, an empty list, a list of nothing', () => {
+describe('a filter’s value', () => {
+  it('says nothing as an empty text, an empty list, a list of nothing', () => {
     expect(parameterHasValue('  ')).toBe(false)
     expect(parameterHasValue([])).toBe(false)
     expect(parameterHasValue([null, null])).toBe(false)
     expect(parameterHasValue([null, 3])).toBe(true)
     expect(parameterHasValue(['fait'])).toBe(true)
-  })
-})
-
-describe('a text that cites values', () => {
-  it('cites each name once, in order, spaces allowed inside the braces', () => {
-    expect(citedNames('<p>{{ total }} sur {{periode}}, {{total}}, {{Pas_un_nom}} {x}</p>')).toEqual(
-      ['total', 'periode'],
-    )
-  })
-
-  it('runs the queries it cites, as cards in its place, and nothing for a filter', () => {
-    const cards = questionCards([
-      { id: 'q', tab: null, x: 0, y: 0, w: 6, h: 4, kind: 'question', question: 'q1' },
-      {
-        id: 't',
-        tab: 'o1',
-        x: 6,
-        y: 0,
-        w: 12,
-        h: 4,
-        kind: 'text',
-        text: '{{a}} {{b}}',
-        variables: [
-          { name: 'a', question: 'q2', mappings: [{ parameter: 'p', target: { variable: 'v' } }] },
-          { name: 'b', parameter: 'p' },
-        ],
-      },
-      { id: 'h', tab: null, x: 0, y: 4, w: 24, h: 2, kind: 'heading', text: 'Titre' },
-    ])
-    expect(cards.map((c) => [c.id, c.question])).toEqual([
-      ['q', 'q1'],
-      ['t', 'q2'],
-    ])
-    expect(cards[1]).toMatchObject({
-      kind: 'question',
-      tab: 'o1',
-      mappings: [{ parameter: 'p', target: { variable: 'v' } }],
-    })
-  })
-})
-
-describe('a text citing a card, or a query of its own', () => {
-  const chart = {
-    id: 'c1',
-    tab: null,
-    x: 0,
-    y: 0,
-    w: 6,
-    h: 4,
-    kind: 'question' as const,
-    query: { kind: 'builder' as const, source: 't1' },
-    mappings: [{ parameter: 'p', target: { column: { field: 'jour' } } }],
-  }
-  const text = {
-    id: 't',
-    tab: null,
-    x: 6,
-    y: 0,
-    w: 12,
-    h: 4,
-    kind: 'text' as const,
-    text: '<p>{{carte}} et {{mienne}}, sur {{periode}}</p>',
-    variables: [
-      { name: 'carte', card: 'c1' },
-      { name: 'mienne', query: { kind: 'sql' as const, sql: 'SELECT 1' }, label: 'À moi' },
-      { name: 'periode', parameter: 'p' },
-    ],
-  }
-
-  it('runs the card it cites, under that card’s own filters', () => {
-    expect(variableCard(text, { name: 'carte', card: 'c1' }, [chart, text])).toBe(chart)
-    expect(variableCard(text, { name: 'carte', card: 'absente' }, [chart, text])).toBeNull()
-    expect(variableCard(text, { name: 'mienne', query: chart.query })).toMatchObject({
-      id: 't',
-      kind: 'question',
-      query: chart.query,
-    })
-    // The card is already among the dashboard's questions: not twice.
-    expect(questionCards([chart, text]).map((c) => c.id)).toEqual(['c1', 't'])
-  })
-
-  it('loses a value gone, and the words that cited it', () => {
-    const left = withoutVariables(text, (v) => 'card' in v && v.card === 'c1')
-    expect(left.text).toBe('<p> et {{mienne}}, sur {{periode}}</p>')
-    expect(left.variables?.map((v) => v.name)).toEqual(['mienne', 'periode'])
-    expect(withoutVariables(text, () => false)).toBe(text)
   })
 })

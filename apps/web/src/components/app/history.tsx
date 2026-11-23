@@ -1,21 +1,5 @@
 'use client'
 
-import { SidebarToggle } from '@/components/app/sidebar'
-import { StructureHistory } from '@/components/app/structure-history'
-import { Button } from '@/components/ui/button'
-import { Choice } from '@/components/ui/choice'
-import { Hint } from '@/components/ui/tooltip'
-import {
-  type DescribedBase,
-  type Revision,
-  type RevisionChange,
-  type RevisionPage,
-  api,
-} from '@/lib/api/client'
-import { $t, $tp, intlLocale } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { useWorkspace } from '@/lib/store/workspace'
-import { cn } from '@/lib/utils'
 import {
   ArrowRight,
   Bot,
@@ -28,6 +12,22 @@ import {
   Undo2,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { SidebarToggle } from '@/components/app/sidebar'
+import { StructureHistory } from '@/components/app/structure-history'
+import { Button } from '@/components/ui/button'
+import { Choice } from '@/components/ui/choice'
+import { Hint } from '@/components/ui/tooltip'
+import {
+  api,
+  type DescribedBase,
+  type Revision,
+  type RevisionChange,
+  type RevisionPage,
+} from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { useWorkspace } from '@/lib/store/workspace'
+import { cn } from '@/lib/utils'
 
 /**
  * The history — chapter 07 §9 — as a person reads it: who changed what, when, and what it

@@ -1,11 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { AccountForm } from '@/components/account-form'
 import { AuthLayout } from '@/components/auth-layout'
 import { OidcButtons } from '@/components/login'
-import { type SignupPolicy, api } from '@/lib/api/client'
+import { api, type SignupPolicy } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import { useEffect, useState } from 'react'
 
 /** The domains an instance admits, as a line under the address field. */
 export function domainsHint(policy: SignupPolicy | null): string | undefined {

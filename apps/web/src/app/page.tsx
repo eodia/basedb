@@ -1,5 +1,8 @@
 'use client'
 
+import { Database, FolderKanban, Loader2, Plus, SearchX, Sparkles } from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { Toaster } from 'sonner'
 import { ApiDocs } from '@/components/api-reference/api-docs'
 import {
   AdminPanel,
@@ -12,10 +15,10 @@ import { AutomationsPanel } from '@/components/app/automations'
 import { BaseIllustration } from '@/components/app/base-illustration'
 import { NewBaseDialog } from '@/components/app/base-menu'
 import { CommandPalette } from '@/components/app/command-palette'
-import { DashboardsPanel } from '@/components/app/dashboards'
 import { ElevationProvider } from '@/components/app/elevation'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { HistoryPanel } from '@/components/app/history'
+import { InsightsPanel } from '@/components/app/insights-panel'
 import { IntegrationsPanel } from '@/components/app/integrations'
 import type { LookValue } from '@/components/app/look-picker'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
@@ -48,10 +51,11 @@ import { Login } from '@/components/login'
 import { SignUp } from '@/components/signup'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { type DashboardFocus, type Place, addressOf, placeOf } from '@/lib/address-bar'
+import { addressOf, type Place, placeOf } from '@/lib/address-bar'
 import {
   type ApiDocumentation,
   ApiError,
+  api,
   type DescribedBase,
   type Me,
   type Project,
@@ -59,21 +63,18 @@ import {
   type Question,
   type SqlView,
   type SqlViewSummary,
-  api,
 } from '@/lib/api/client'
 import { withoutBase } from '@/lib/base-path'
 import { $t, followAccountLocale } from '@/lib/i18n'
+import { useInsightsAvailable } from '@/lib/insights'
 import { messageFor, reasonFor } from '@/lib/messages'
 import { applyPreferences } from '@/lib/preferences'
 import { usePanels } from '@/lib/store/panels'
 import { useSidebar } from '@/lib/store/sidebar'
-import { type Tab, hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
+import { hydrateWorkspace, type Tab, useActiveTab, useWorkspace } from '@/lib/store/workspace'
 import { useTheme } from '@/lib/theme'
 import { useAddressBar } from '@/lib/use-address-bar'
 import { useTitle } from '@/lib/use-title'
-import { Database, FolderKanban, Loader2, Plus, SearchX, Sparkles } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { Toaster } from 'sonner'
 
 /**
  * The application — chapter 11, organized by projects (chapter 05 §15).
@@ -160,11 +161,6 @@ export default function App() {
    * not theirs, which the screen does not tell apart (chapter 11 §7). Left by going elsewhere.
    */
   const [missing, setMissing] = useState(false)
-  /** The dashboard, or the question, shown in the dashboards of a base — for the address. */
-  const [dashboardFocus, setDashboardFocus] = useState<{
-    readonly base: string
-    readonly focus: DashboardFocus | null
-  } | null>(null)
   /** The automation shown in the automations of a base — for the address. */
   const [automationFocus, setAutomationFocus] = useState<{
     readonly base: string
@@ -389,6 +385,14 @@ export default function App() {
     },
     [activate, describe, openTable, refreshDoc, selectProject],
   )
+
+  // Without insights, its dashboards' address leads to the base's data instead.
+  const insights = useInsightsAvailable()
+  useEffect(() => {
+    if (section === 'dashboards' && insights === false && baseName !== null) {
+      void focusBase(baseName, 'open')
+    }
+  }, [section, insights, baseName, focusBase])
 
   /**
    * The first load of a session: the project and base to land on.
@@ -653,7 +657,7 @@ export default function App() {
    * `known`: the projects as last read, which list what this person may open. Says whether
    * the place is there: one that is not — a base, a table, a view deleted, renamed or not
    * theirs — makes the page that does not exist, never a refusal (chapter 11 §7). What sits
-   * inside a section — a dashboard, an automation, a saved view, a row — is shown when it is
+   * inside a section — an automation, a saved view, a row — is shown when it is
    * still there, and the address then says what was shown instead.
    */
   const followAddress = useCallback(
@@ -691,10 +695,6 @@ export default function App() {
             return true
           }
           await focusBase(place.base, place.section)
-          return true
-        case 'dashboards':
-          setDashboardFocus({ base: place.base, focus: place.focus })
-          await focusBase(place.base, 'dashboards')
           return true
         case 'automations':
           setAutomationFocus({ base: place.base, id: place.automation })
@@ -814,7 +814,6 @@ export default function App() {
             base,
             activeTab,
             shownRecord,
-            dashboardFocus,
             automationFocus,
             structureShown,
           }),
@@ -1079,23 +1078,7 @@ export default function App() {
           ) : section === 'history' ? (
             <HistoryPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
           ) : section === 'dashboards' ? (
-            <DashboardsPanel
-              base={base}
-              focus={dashboardFocus?.base === base.name ? dashboardFocus.focus : null}
-              onFocus={(focus) => setDashboardFocus({ base: base.name, focus })}
-              onOpenInTab={(question) => {
-                setSection('data')
-                useWorkspace.getState().openQuestion(base.name, question)
-              }}
-              onOpenDraftInTab={(draft) => {
-                setSection('data')
-                const store = useWorkspace.getState()
-                store.setQuestionDraft(
-                  store.openNewQuestion(base.name, 'builder', draft.label),
-                  draft,
-                )
-              }}
-            />
+            <InsightsPanel base={base} />
           ) : section === 'automations' ? (
             <AutomationsPanel
               base={base}
@@ -1393,7 +1376,6 @@ function placeOnScreen(screen: {
   readonly base: DescribedBase | null
   readonly activeTab: Tab | null
   readonly shownRecord: string | null
-  readonly dashboardFocus: { readonly base: string; readonly focus: DashboardFocus | null } | null
   readonly automationFocus: { readonly base: string; readonly id: string | null } | null
   readonly structureShown: { readonly base: string; readonly table: string | null } | null
 }): Place {
@@ -1403,10 +1385,6 @@ function placeOnScreen(screen: {
     return { kind: 'admin', tab: slugOfAdminTab(screen.adminTab) }
   }
   if (section !== 'data' && section !== 'admin' && base !== null) {
-    if (section === 'dashboards') {
-      const focus = screen.dashboardFocus?.base === base.name ? screen.dashboardFocus.focus : null
-      return { kind: 'dashboards', base: base.name, focus }
-    }
     if (section === 'automations') {
       const id = screen.automationFocus?.base === base.name ? screen.automationFocus.id : null
       return { kind: 'automations', base: base.name, automation: id }

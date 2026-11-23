@@ -1,17 +1,17 @@
 'use client'
 
+import { AtSign, Bell, CheckCheck, CornerDownRight, Loader2, UserCheck, Zap } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { initials } from '@/components/app/value-widgets'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type AppNotification, type Viewer, api } from '@/lib/api/client'
+import { type AppNotification, api, type Viewer } from '@/lib/api/client'
 import { notificationSentence, relativeTime } from '@/lib/collab'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { AtSign, Bell, CheckCheck, CornerDownRight, Loader2, UserCheck, Zap } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Who else is here, and what concerns oneself — chapter 16, on screen: the faces of the
@@ -53,7 +53,9 @@ export function Viewers({
   const shown = others.slice(0, 4)
   const box = size === 'xs' ? 'size-6 text-[10px]' : 'size-7 text-[11px]'
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a group of avatars, not of form controls a <fieldset> would hold
     <div
+      role="group"
       className="flex items-center -space-x-1.5"
       aria-label={$t('Aussi ici : {map}', { map: others.map((v) => v.name).join(', ') })}
     >
@@ -228,6 +230,7 @@ export function NotificationBell({
                 </span>
                 {n.read_at === null && (
                   <span
+                    role="img"
                     className="mt-2 size-2 shrink-0 rounded-full bg-primary"
                     aria-label={$t('Non lue')}
                   />

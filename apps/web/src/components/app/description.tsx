@@ -1,5 +1,7 @@
 'use client'
 
+import { Plus } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
@@ -7,8 +9,6 @@ import { DESCRIPTION_MAX } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Plus } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
 
 /**
  * The pieces every screen uses to write and to show a description.

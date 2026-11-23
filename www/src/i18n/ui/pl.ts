@@ -2061,13 +2061,6 @@ export default {
 		download: 'Pobierz JSON',
 		downloadNote: 'Aby zaimportować go do swojej instancji albo dostosować przed zgłoszeniem do katalogu.',
 		viewMeta: '– {kind}, {table}',
-		dashboard: '<strong>Pulpit</strong> „{label}” – {blocks}',
-		blocks: {
-			one: '{n} karta',
-			few: '{n} karty',
-			many: '{n} kart',
-			other: '{n} karty',
-		},
 		automation: '<strong>Automatyzacja</strong> „{label}”',
 		yes: 'Tak',
 		no: 'Nie',

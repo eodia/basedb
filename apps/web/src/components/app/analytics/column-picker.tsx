@@ -1,19 +1,19 @@
 'use client'
 
+import type { Breakout, TemporalUnit } from '@basedb/contracts'
+import { ChevronRight, Link2, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Input } from '@/components/ui/input'
 import {
   type ColumnOption,
-  UNIT_GROUPS,
-  UNIT_LABELS,
   isNumeric,
   isTemporal,
+  UNIT_GROUPS,
+  UNIT_LABELS,
 } from '@/lib/analytics/model'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { Breakout, TemporalUnit } from '@basedb/contracts'
-import { ChevronRight, Link2, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
 
 /**
  * The columns of a query, to pick one — grouped by the table they come from, searched as

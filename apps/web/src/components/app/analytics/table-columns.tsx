@@ -1,5 +1,8 @@
 'use client'
 
+import { type BuilderQuery, columnName, QUERY_LIMITS } from '@basedb/contracts'
+import { ChevronDown, Search } from 'lucide-react'
+import { type ReactNode, useId, useMemo, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -13,9 +16,6 @@ import {
 import type { DescribedBase } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { type BuilderQuery, QUERY_LIMITS, columnName } from '@basedb/contracts'
-import { ChevronDown, Search } from 'lucide-react'
-import { type ReactNode, useId, useMemo, useState } from 'react'
 
 /**
  * The columns one table gives a question that lists rows (chapter 18 §3): a chip that says

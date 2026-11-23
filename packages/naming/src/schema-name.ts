@@ -1,4 +1,4 @@
-import { TENANT_ID_LENGTH, isTenantId } from './tenant.js'
+import { isTenantId, TENANT_ID_LENGTH } from './tenant.js'
 
 /**
  * Schema name composition — chapter 01 §5.

@@ -1,5 +1,7 @@
 'use client'
 
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import {
   CreateRowsDialog,
   type CreationAnswer,
@@ -7,39 +9,37 @@ import {
   FieldEditDialog,
 } from '@/components/app/grid/bulk-dialogs'
 import {
-  type Directories,
-  type Ignored,
-  type Plan,
-  type RowLike,
-  type Target,
   bulkWritable,
+  type Directories,
   enterFound,
+  type Ignored,
   ignoredSummary,
   linkCandidates,
   linkDirectory,
   memberDirectory,
+  type Plan,
   parseClipboard,
   placements,
   planFill,
   planPaste,
+  type RowLike,
   refsOf,
+  type Target,
   targetsOf,
 } from '@/components/app/grid/paste'
 import type { SearchLink } from '@/components/app/pickers'
 import {
   ApiError,
+  api,
   type Field,
   type LinkOption,
   type Member,
   type TableRef,
-  api,
 } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { fold } from '@/lib/import'
 import { messageFor } from '@/lib/messages'
 import { asOneStep, undo } from '@/lib/undo'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * Writing many cells at once from the grid — chapter 11 §2.4: a range pasted from a

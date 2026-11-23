@@ -1,6 +1,6 @@
+import { LOOK_COLORS } from '@basedb/contracts'
 import type { FieldOption, FieldOptionInput } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import { LOOK_COLORS } from '@basedb/contracts'
 
 /**
  * The options of a list of choices, as an editor holds them.

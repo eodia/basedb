@@ -479,7 +479,7 @@ joignable depuis Internet est une porte dérobée.
 Ce qui existe aujourd'hui couvre le mot de passe perdu, pas l'administrateur perdu.
 Démarré avec `BASEDB_BOOTSTRAP=1` et `BASEDB_ADMIN_PASSWORD`, le serveur réapplique ce
 mot de passe à l'administrateur du tenant (`BASEDB_TENANT`) à **chaque** démarrage, et
-remet à zéro ses échecs et son verrouillage (`apps/api/src/server.ts`, `setPassword`) ;
+remet à zéro ses échecs et son verrouillage (`rust-server/crates/server/src/socle.rs`, `bootstrap`) ;
 la variable est à retirer une fois la main reprise. S'il n'y a plus d'administrateur
 vivant, le démarrage le dit dans le journal (« aucun administrateur dans le tenant ») et
 s'arrête là : il n'existe **pas encore** de commande qui promeuve un utilisateur désigné.

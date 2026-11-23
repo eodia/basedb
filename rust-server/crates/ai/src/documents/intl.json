@@ -1,0 +1,1655 @@
+{
+ "fraction_digits": {
+  "ADP": 0,
+  "AFN": 0,
+  "ALL": 0,
+  "BHD": 3,
+  "BIF": 0,
+  "BYR": 0,
+  "CLF": 4,
+  "CLP": 0,
+  "COP": 0,
+  "DJF": 0,
+  "ESP": 0,
+  "GNF": 0,
+  "HUF": 0,
+  "IDR": 0,
+  "IQD": 0,
+  "IRR": 0,
+  "ISK": 0,
+  "ITL": 0,
+  "JOD": 3,
+  "JPY": 0,
+  "KMF": 0,
+  "KPW": 0,
+  "KRW": 0,
+  "KWD": 3,
+  "LAK": 0,
+  "LBP": 0,
+  "LUF": 0,
+  "LYD": 3,
+  "MGA": 0,
+  "MGF": 0,
+  "MMK": 0,
+  "MRO": 0,
+  "OMR": 3,
+  "PKR": 0,
+  "PYG": 0,
+  "RWF": 0,
+  "SLL": 0,
+  "SOS": 0,
+  "STD": 0,
+  "SYP": 0,
+  "TMM": 0,
+  "TND": 3,
+  "TRL": 0,
+  "UGX": 0,
+  "UYI": 0,
+  "UYW": 4,
+  "VND": 0,
+  "VUV": 0,
+  "XAF": 0,
+  "XOF": 0,
+  "XPF": 0,
+  "YER": 0,
+  "ZMK": 0,
+  "ZWD": 0
+ },
+ "locales": {
+  "fr": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "ARS": "$AR",
+    "AUD": "$AU",
+    "BEF": "FB",
+    "BMD": "$BM",
+    "BND": "$BN",
+    "BRL": "R$",
+    "BZD": "$BZ",
+    "CAD": "$CA",
+    "CLP": "$CL",
+    "COP": "$CO",
+    "CYP": "£CY",
+    "EUR": "€",
+    "FJD": "$FJ",
+    "FKP": "£FK",
+    "FRF": "F",
+    "GBP": "£GB",
+    "GIP": "£GI",
+    "IEP": "£IE",
+    "ILP": "£IL",
+    "ILS": "₪",
+    "INR": "₹",
+    "ITL": "₤IT",
+    "KRW": "₩",
+    "LBP": "£LB",
+    "MTP": "£MT",
+    "MXN": "$MX",
+    "NAD": "$NA",
+    "NZD": "$NZ",
+    "RHD": "$RH",
+    "SBD": "$SB",
+    "SGD": "$SG",
+    "SRD": "$SR",
+    "TTD": "$TT",
+    "USD": "$US",
+    "UYU": "$UY",
+    "VND": "₫",
+    "WST": "$WS",
+    "XAF": "FCFA",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "FCFP",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " à ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "en": {
+   "decimal": ".",
+   "group": ",",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤#",
+    "neg": "-¤#"
+   },
+   "symbols": {
+    "AUD": "A$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "PHP": "₱",
+    "TWD": "NT$",
+    "USD": "$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {
+    "XCG": {
+     "pos": "Cg. #",
+     "neg": "-Cg. #"
+    }
+   },
+   "date": [
+    "{month}",
+    " ",
+    "{day}",
+    ", ",
+    "{year}"
+   ],
+   "datetime": [
+    "{month}",
+    " ",
+    "{day}",
+    ", ",
+    "{year}",
+    " at ",
+    "{hour}",
+    ":",
+    "{minute}",
+    " ",
+    "{period}"
+   ],
+   "months": [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h12",
+   "hour_pad": false,
+   "day_periods": [
+    "AM",
+    "PM"
+   ]
+  },
+  "de": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "ATS": "öS",
+    "AUD": "AU$",
+    "BGM": "BGK",
+    "BGO": "BGJ",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "DEM": "DM",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "THB": "฿",
+    "TWD": "NT$",
+    "USD": "$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}",
+    " um ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "es": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 2,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "ESP": "₧",
+    "EUR": "€",
+    "THB": "฿",
+    "USD": "US$",
+    "VND": "₫",
+    "XCG": "Cg.",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " de ",
+    "{month}",
+    " de ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " de ",
+    "{month}",
+    " de ",
+    "{year}",
+    " a las ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": false,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "it": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 2,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "AUD": "A$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "GBP": "£",
+    "ILS": "₪",
+    "NZD": "NZ$",
+    "PHP": "₱",
+    "THB": "฿",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cf",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {
+    "ITL": {
+     "pos": "ITL #",
+     "neg": "-ITL #"
+    }
+   },
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " alle ore ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "gennaio",
+    "febbraio",
+    "marzo",
+    "aprile",
+    "maggio",
+    "giugno",
+    "luglio",
+    "agosto",
+    "settembre",
+    "ottobre",
+    "novembre",
+    "dicembre"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "pt-BR": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤ #",
+    "neg": "-¤ #"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "PTE": "Esc.",
+    "THB": "฿",
+    "TWD": "NT$",
+    "USD": "US$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " de ",
+    "{month}",
+    " de ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " de ",
+    "{month}",
+    " de ",
+    "{year}",
+    " às ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "janeiro",
+    "fevereiro",
+    "março",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "nl": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤ #",
+    "neg": "¤ -#"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "C$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "FJD": "FJ$",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "SBD": "SI$",
+    "THB": "฿",
+    "TWD": "NT$",
+    "USD": "US$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "ZWG": "ZiG"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " om ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "januari",
+    "februari",
+    "maart",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "augustus",
+    "september",
+    "oktober",
+    "november",
+    "december"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "pl": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 2,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "BRL": "R$",
+    "EUR": "€",
+    "PLN": "zł",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "stycznia",
+    "lutego",
+    "marca",
+    "kwietnia",
+    "maja",
+    "czerwca",
+    "lipca",
+    "sierpnia",
+    "września",
+    "października",
+    "listopada",
+    "grudnia"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "cs": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "CSK": "Kčs",
+    "CZK": "Kč",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "TWD": "NT$",
+    "USD": "US$",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XEU": "ECU",
+    "XOF": "F CFA",
+    "XPF": "CFPF"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}",
+    " v ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "ledna",
+    "února",
+    "března",
+    "dubna",
+    "května",
+    "června",
+    "července",
+    "srpna",
+    "září",
+    "října",
+    "listopadu",
+    "prosince"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": false,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "sv": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "−#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "−# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "−# ¤"
+   },
+   "symbols": {
+    "BBD": "Bds$",
+    "BMD": "BM$",
+    "BRL": "BR$",
+    "BSD": "BS$",
+    "BZD": "BZ$",
+    "CAD": "CA$",
+    "DKK": "Dkr",
+    "DOP": "RD$",
+    "EEK": "Ekr",
+    "EGP": "EG£",
+    "EUR": "€",
+    "IEP": "IE£",
+    "ILS": "₪",
+    "ISK": "Ikr",
+    "JMD": "JM$",
+    "MXN": "MX$",
+    "NOK": "Nkr",
+    "SEK": "kr",
+    "USD": "US$",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " kl. ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "januari",
+    "februari",
+    "mars",
+    "april",
+    "maj",
+    "juni",
+    "juli",
+    "augusti",
+    "september",
+    "oktober",
+    "november",
+    "december"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "da": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "DKK": "kr.",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "THB": "฿",
+    "TWD": "NT$",
+    "USD": "US$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}",
+    " kl. ",
+    "{hour}",
+    ".",
+    "{minute}"
+   ],
+   "months": [
+    "januar",
+    "februar",
+    "marts",
+    "april",
+    "maj",
+    "juni",
+    "juli",
+    "august",
+    "september",
+    "oktober",
+    "november",
+    "december"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "nb": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "−#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "−# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "−# ¤"
+   },
+   "symbols": {
+    "EUR": "€",
+    "GBP": "£",
+    "NOK": "kr",
+    "XCG": "Cg.",
+    "XOF": "F CFA"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}",
+    " kl. ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "januar",
+    "februar",
+    "mars",
+    "april",
+    "mai",
+    "juni",
+    "juli",
+    "august",
+    "september",
+    "oktober",
+    "november",
+    "desember"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "fi": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "−#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "−# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "−# ¤"
+   },
+   "symbols": {
+    "EUR": "€",
+    "FIM": "mk",
+    "GBP": "£",
+    "JPY": "¥",
+    "USD": "$",
+    "XAF": "FCFA",
+    "XCG": "Cg.",
+    "XOF": "F CFA"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    ". ",
+    "{month}",
+    " ",
+    "{year}",
+    " klo ",
+    "{hour}",
+    ".",
+    "{minute}"
+   ],
+   "months": [
+    "tammikuuta",
+    "helmikuuta",
+    "maaliskuuta",
+    "huhtikuuta",
+    "toukokuuta",
+    "kesäkuuta",
+    "heinäkuuta",
+    "elokuuta",
+    "syyskuuta",
+    "lokakuuta",
+    "marraskuuta",
+    "joulukuuta"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": false,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "ro": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "# %",
+    "neg": "-# %"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "XAF": "FCFA",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " la ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "ianuarie",
+    "februarie",
+    "martie",
+    "aprilie",
+    "mai",
+    "iunie",
+    "iulie",
+    "august",
+    "septembrie",
+    "octombrie",
+    "noiembrie",
+    "decembrie"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "hu": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 2,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "HUF": "Ft",
+    "JPY": "¥",
+    "XAF": "FCFA",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{year}",
+    ". ",
+    "{month}",
+    " ",
+    "{day}",
+    "."
+   ],
+   "datetime": [
+    "{year}",
+    ". ",
+    "{month}",
+    " ",
+    "{day}",
+    ". ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "január",
+    "február",
+    "március",
+    "április",
+    "május",
+    "június",
+    "július",
+    "augusztus",
+    "szeptember",
+    "október",
+    "november",
+    "december"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": false,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "tr": {
+   "decimal": ",",
+   "group": ".",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "%#",
+    "neg": "-%#"
+   },
+   "currency": {
+    "pos": "¤#",
+    "neg": "-¤#"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "THB": "฿",
+    "TRY": "₺",
+    "TWD": "NT$",
+    "USD": "$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {
+    "XCG": {
+     "pos": "Cg. #",
+     "neg": "-Cg. #"
+    }
+   },
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}"
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "Ocak",
+    "Şubat",
+    "Mart",
+    "Nisan",
+    "Mayıs",
+    "Haziran",
+    "Temmuz",
+    "Ağustos",
+    "Eylül",
+    "Ekim",
+    "Kasım",
+    "Aralık"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "uk": {
+   "decimal": ",",
+   "group": " ",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "# ¤",
+    "neg": "-# ¤"
+   },
+   "symbols": {
+    "JPY": "¥",
+    "UAH": "₴",
+    "UAK": "крб.",
+    "XAF": "FCFA",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " р."
+   ],
+   "datetime": [
+    "{day}",
+    " ",
+    "{month}",
+    " ",
+    "{year}",
+    " р. о ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "січня",
+    "лютого",
+    "березня",
+    "квітня",
+    "травня",
+    "червня",
+    "липня",
+    "серпня",
+    "вересня",
+    "жовтня",
+    "листопада",
+    "грудня"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "ja": {
+   "decimal": ".",
+   "group": ",",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤#",
+    "neg": "-¤#"
+   },
+   "symbols": {
+    "AUD": "A$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "元",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "￥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "TWD": "NT$",
+    "USD": "$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg",
+    "XOF": "F CFA",
+    "XPF": "CFPF"
+   },
+   "currency_overrides": {},
+   "date": [
+    "{year}",
+    "年",
+    "{month_num}",
+    "月",
+    "{day}",
+    "日"
+   ],
+   "datetime": [
+    "{year}",
+    "年",
+    "{month_num}",
+    "月",
+    "{day}",
+    "日 ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": false,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "zh-CN": {
+   "decimal": ".",
+   "group": ",",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤#",
+    "neg": "-¤#"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "¥",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILR": "ILS",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "TWD": "NT$",
+    "USD": "US$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF"
+   },
+   "currency_overrides": {
+    "XCG": {
+     "pos": "Cg. #",
+     "neg": "-Cg. #"
+    }
+   },
+   "date": [
+    "{year}",
+    "年",
+    "{month_num}",
+    "月",
+    "{day}",
+    "日"
+   ],
+   "datetime": [
+    "{year}",
+    "年",
+    "{month_num}",
+    "月",
+    "{day}",
+    "日 ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h23",
+   "hour_pad": true,
+   "day_periods": [
+    "",
+    ""
+   ]
+  },
+  "ko": {
+   "decimal": ".",
+   "group": ",",
+   "min_grouping": 1,
+   "number": {
+    "pos": "#",
+    "neg": "-#"
+   },
+   "percent": {
+    "pos": "#%",
+    "neg": "-#%"
+   },
+   "currency": {
+    "pos": "¤#",
+    "neg": "-¤#"
+   },
+   "symbols": {
+    "AUD": "AU$",
+    "BRL": "R$",
+    "CAD": "CA$",
+    "CNY": "CN¥",
+    "EUR": "€",
+    "GBP": "£",
+    "HKD": "HK$",
+    "ILS": "₪",
+    "INR": "₹",
+    "JPY": "JP¥",
+    "KRW": "₩",
+    "MXN": "MX$",
+    "NZD": "NZ$",
+    "TWD": "NT$",
+    "USD": "US$",
+    "VND": "₫",
+    "XAF": "FCFA",
+    "XCD": "EC$",
+    "XCG": "Cg.",
+    "XOF": "F CFA",
+    "XPF": "CFPF",
+    "XXX": "¤"
+   },
+   "currency_overrides": {
+    "XCG": {
+     "pos": "Cg. #",
+     "neg": "-Cg. #"
+    }
+   },
+   "date": [
+    "{year}",
+    "년 ",
+    "{month}",
+    " ",
+    "{day}",
+    "일"
+   ],
+   "datetime": [
+    "{year}",
+    "년 ",
+    "{month}",
+    " ",
+    "{day}",
+    "일 ",
+    "{period}",
+    " ",
+    "{hour}",
+    ":",
+    "{minute}"
+   ],
+   "months": [
+    "1월",
+    "2월",
+    "3월",
+    "4월",
+    "5월",
+    "6월",
+    "7월",
+    "8월",
+    "9월",
+    "10월",
+    "11월",
+    "12월"
+   ],
+   "month_pad": false,
+   "day_pad": false,
+   "hour_cycle": "h12",
+   "hour_pad": false,
+   "day_periods": [
+    "오전",
+    "오후"
+   ]
+  }
+ }
+}

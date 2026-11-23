@@ -1,15 +1,6 @@
 'use client'
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { $t } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import {
   Columns2,
   Heading,
   Image,
@@ -21,6 +12,15 @@ import {
   SeparatorHorizontal,
   Type,
 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { $t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { BlockKind } from './model'
 
 /**

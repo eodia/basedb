@@ -83,7 +83,7 @@ Edellytykset: Node 22 tai uudempi, Docker ja `corepack enable`.
 
 ```bash
 corepack pnpm install
-corepack pnpm exec tsc -b packages/naming packages/contracts packages/catalog-schema packages/core apps/api apps/mcp
+corepack pnpm exec tsc -b packages/naming packages/contracts
 corepack pnpm start
 ```
 

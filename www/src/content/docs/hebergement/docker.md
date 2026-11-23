@@ -10,21 +10,21 @@ configuration passe par un fichier `.env` (voir
 
 ## L’image
 
-Elle contient les trois processus de basedb et les sert sur **un seul port, 3000** :
+Elle contient un seul programme, `basedb-server`, qui sert tout sur **un seul port, 3000** :
 
-| Chemin | Processus |
+| Chemin | Rôle |
 |---|---|
-| `/api/*`, `/auth/*`, `/healthz` | l’API REST, la connexion, le travail de fond |
+| `/api/*`, `/auth/*`, `/healthz` | l’API REST, la connexion |
 | `/mcp` | le serveur MCP, pour les agents |
 | tout le reste — `/`, `/f/…`, `/v/…` | l’interface |
 
-Au démarrage, l’API passe la première : sur une base vide, elle applique le catalogue et crée le
-premier administrateur ; aux démarrages suivants, les deux sont sans effet. Le serveur MCP démarre
-dès qu’elle répond. Si l’un des processus s’arrête, le conteneur s’arrête entier, et la politique
-de redémarrage le relance entier.
+Au démarrage, sur une base vide, il applique le catalogue et crée le premier administrateur ; aux
+démarrages suivants, les deux sont sans effet. Le travail de fond (courriels, automatisations,
+champs IA, synchronisations) tourne dans le même processus.
 
-L’image tourne sous l’utilisateur `node`, sur Node 22, déclare une vérification de santé
-(`/healthz`) et un volume, `/data`, pour les fichiers des champs Document et Image.
+L’image, sur Debian sans Node, tourne sous l’utilisateur `basedb` (uid 1000), déclare une
+vérification de santé (`basedb-server healthcheck`) et un volume, `/data`, pour les fichiers des
+champs Document et Image.
 
 | Étiquette | Contenu |
 |---|---|

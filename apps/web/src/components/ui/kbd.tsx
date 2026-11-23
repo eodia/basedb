@@ -1,7 +1,7 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { type ReactNode, useSyncExternalStore } from 'react'
+import { cn } from '@/lib/utils'
 
 const subscribeNothing = () => () => {}
 

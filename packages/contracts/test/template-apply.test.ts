@@ -1,22 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
-  type BuiltField,
-  type BuiltTable,
-  type Template,
-  type TemplateOperations,
-  type TemplateStep,
   aiFieldsOf,
   applyTemplate,
   automationFor,
-  blockFor,
+  type BuiltField,
+  type BuiltTable,
   checkTemplate,
   rowFor,
   specFor,
+  type Template,
+  type TemplateOperations,
+  type TemplateStep,
 } from '../src/index.js'
 
 /**
  * Building a template — chapter 20 §4: a template's labels become the API's names and its
- * choices their values — in a view, a block, an automation, a row —; a relation to a row not
+ * choices their values — in a view, an automation, a row —; a relation to a row not
  * created yet waits; `$moi` is whoever applies it; the steps come in their order, through
  * whatever operations the caller gives.
  */
@@ -99,33 +98,6 @@ describe('applying a template', () => {
     ).toEqual({
       fields: [{ field: 'titre', required: true, label: '', help: '' }],
       title: 'Signaler',
-    })
-  })
-
-  it('points a block at the table by identifier', () => {
-    expect(
-      blockFor(
-        {
-          kind: 'list',
-          title: 'Récents',
-          width: 2,
-          table: 'tickets',
-          fields: ['Titre'],
-          filter: '',
-          sort: '-Ouvert le',
-          limit: 5,
-        },
-        built,
-      ),
-    ).toEqual({
-      kind: 'list',
-      title: 'Récents',
-      width: 2,
-      table: 't-1',
-      fields: ['titre'],
-      filter: '',
-      sort: '-ouvert_le',
-      limit: 5,
     })
   })
 
@@ -230,7 +202,6 @@ describe('the sample rows of a template', () => {
       updateRow: record('updateRow') as TemplateOperations['updateRow'],
       setRequired: record('setRequired') as TemplateOperations['setRequired'],
       createView: record('createView') as TemplateOperations['createView'],
-      createDashboard: record('createDashboard') as TemplateOperations['createDashboard'],
       createAutomation: record('createAutomation', () => ({
         id: 'a',
       })) as TemplateOperations['createAutomation'],

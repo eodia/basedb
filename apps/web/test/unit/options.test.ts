@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  type OptionDraft,
   draftsOf,
   emptyDraft,
   normalizeHex,
+  type OptionDraft,
   optionsOf,
   parseOptionsJson,
   serializeOptions,

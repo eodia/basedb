@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 238 codes, 8 domains.
+// 241 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -188,6 +188,8 @@ export type ErrorCode =
   | 'AI_DISABLED'
   | 'SYNC_SOURCE_FAILED'
   | 'TABLE_SYNCED'
+  | 'INSIGHTS_UNAVAILABLE'
+  | 'INSIGHTS_REFUSED'
   | 'TEMPLATE_INVALID'
   | 'AUTOMATION_WEBHOOK_FAILED'
   | 'AI_KEY_REJECTED'
@@ -196,6 +198,7 @@ export type ErrorCode =
   | 'MAIL_NOT_CONFIGURED'
   | 'GEOCODER_UNAVAILABLE'
   | 'AI_PAYLOAD_TOO_LARGE'
+  | 'AI_ATTACHMENT_UNREADABLE'
   | 'AI_PROVIDER_UNAVAILABLE'
   | 'AI_QUOTA_EXCEEDED'
   | 'AI_RESPONSE_UNUSABLE'
@@ -1439,6 +1442,21 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '19',
     domain: 'api_et_integrations',
   }),
+  INSIGHTS_UNAVAILABLE: Object.freeze({
+    condition: "insights n'est pas configuré (BASEDB_INSIGHTS_*) ou ne répond pas",
+    httpStatus: 503,
+    httpStatusNote: null,
+    chapter: '19',
+    domain: 'api_et_integrations',
+  }),
+  INSIGHTS_REFUSED: Object.freeze({
+    condition:
+      "insights a refusé l'appel fait au nom de la personne ; details.status, details.message",
+    httpStatus: 502,
+    httpStatusNote: null,
+    chapter: '19',
+    domain: 'api_et_integrations',
+  }),
   TEMPLATE_INVALID: Object.freeze({
     condition:
       'Modèle de base mal formé, hors bornes, aux références non résolues ou contenant un interdit ; details.issues[]',
@@ -1493,6 +1511,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   }),
   AI_PAYLOAD_TOO_LARGE: Object.freeze({
     condition: 'Charge utile au-delà des plafonds déclarés',
+    httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '12',
+    domain: 'api_et_integrations',
+  }),
+  AI_ATTACHMENT_UNREADABLE: Object.freeze({
+    condition:
+      "Pièce jointe d'un copilote dans un format non pris en charge, ou dont le texte n'a pas pu être lu ; details.reason",
     httpStatus: 422,
     httpStatusNote: null,
     chapter: '12',

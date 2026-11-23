@@ -7,6 +7,10 @@
 **/*.tsbuildinfo
 **/coverage
 **/*.log
+apps/web/out-static
+
+# The server is built inside the image; its build folders stay outside.
+rust-server/target*
 
 .git
 .github
@@ -21,6 +25,7 @@
 
 www
 docs
+docker/trino
 *.png
 Dockerfile
 docker-compose*.yml

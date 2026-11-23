@@ -1,0 +1,62 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.8.2"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[workspace.dependencies]
+basedb_contracts = { package = "basedb-contracts", path = "crates/contracts" }
+basedb_base = { package = "basedb-base", path = "crates/base" }
+basedb_catalog = { package = "basedb-catalog", path = "crates/catalog" }
+basedb_records = { package = "basedb-records", path = "crates/records" }
+basedb_admin = { package = "basedb-admin", path = "crates/admin" }
+basedb_automations = { package = "basedb-automations", path = "crates/automations" }
+basedb_ai = { package = "basedb-ai", path = "crates/ai" }
+basedb_mcp = { package = "basedb-mcp", path = "crates/mcp" }
+basedb_web = { package = "basedb-web", path = "crates/web" }
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+tokio-util = "0.7"
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
+tower = { version = "0.5", default-features = false, features = ["util"] }
+http-body-util = "0.1"
+bytes = "1"
+tokio-postgres = { version = "0.7", features = ["with-serde_json-1", "with-chrono-0_4", "with-uuid-1", "array-impls"] }
+postgres-types = { version = "0.2", features = ["derive"] }
+deadpool-postgres = "0.14"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+regex = "1"
+indexmap = "2"
+sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+getrandom = "0.2"
+subtle = "2"
+# Signatures des jetons d'identité OIDC (RS*, PS*, ES256, ES384) — déjà là par rustls.
+ring = "0.17"
+# Mots de passe : argon2id, mêmes paramètres que @node-rs/argon2 (password.ts).
+argon2 = { version = "0.5", features = ["std"] }
+uuid = { version = "1", features = ["v4"] }
+unicode-normalization = "0.1"
+url = "2"
+form_urlencoded = "1"
+futures-util = { version = "0.3", default-features = false, features = ["std", "alloc"] }
+# SMTP (mailer du socle) : tokio + rustls/ring + racines du magasin système.
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "pool", "builder", "hostname", "tokio1", "tokio1-rustls", "ring", "rustls-native-certs"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls-native-roots", "http2", "charset"] }
+
+# Argon2 (64 Mio, 3 passes) non optimisé : 2,7 s par connexion en debug. Optimisé, ~0,1 s.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+codegen-units = 4

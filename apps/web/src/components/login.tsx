@@ -1,12 +1,14 @@
 'use client'
 
+import { Check, ChevronDown, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
   AuthLayout,
   FormError,
-  PRESSABLE,
   PasswordInput,
-  REVEAL,
+  PRESSABLE,
   pauseOnSuccess,
+  REVEAL,
   revealAt,
 } from '@/components/auth-layout'
 import { PasswordReset } from '@/components/password-reset'
@@ -14,13 +16,11 @@ import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ApiError, type DemoAccount, api } from '@/lib/api/client'
+import { ApiError, api, type DemoAccount } from '@/lib/api/client'
 import { withBase } from '@/lib/base-path'
 import { $t, LOCALE_NAMES } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Check, ChevronDown, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 /**
  * Login screen — chapter 13.

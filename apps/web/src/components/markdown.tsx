@@ -1,5 +1,7 @@
 'use client'
 
+import { Info, Lightbulb, type LucideIcon, OctagonAlert, TriangleAlert } from 'lucide-react'
+import { Fragment, memo, type ReactNode, useMemo } from 'react'
 import { CodeGroup } from '@/components/api-reference/code-block'
 import { $t } from '@/lib/i18n'
 import {
@@ -12,8 +14,6 @@ import {
   parseMarkdown,
 } from '@/lib/markdown'
 import { cn } from '@/lib/utils'
-import { Info, Lightbulb, type LucideIcon, OctagonAlert, TriangleAlert } from 'lucide-react'
-import { Fragment, type ReactNode, memo, useMemo } from 'react'
 
 export { headings, slugify, unescapeText } from '@/lib/markdown'
 
@@ -269,7 +269,10 @@ function Table({ block }: { readonly block: Extract<Block, { type: 'table' }> })
 function List({
   items,
   nested = false,
-}: { readonly items: readonly ListItem[]; nested?: boolean }) {
+}: {
+  readonly items: readonly ListItem[]
+  nested?: boolean
+}) {
   return (
     <ul
       className={cn(

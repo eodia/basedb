@@ -39,8 +39,11 @@ celui de TOAST (« Types de champs et projection vers PostgreSQL », § 2.2) : l
 décompressée à chaque lecture de la page, cent lignes au plus ; `fields` reste le moyen de
 ne pas la lire, pour un consommateur qui n'en a pas l'usage.
 
-`count` est absent par défaut ; un bouton « Compter » émet `count=exact`, et
-`count_is_capped` s'affiche « 100 000+ », jamais un nombre rond inventé.
+Le total se compte seul, **à côté** de la page : une requête à part, `limit=1&count=exact`,
+une fois par filtre, puis après une écriture ou un rechargement — pas d'une page à l'autre.
+À part, parce que `count=exact` coûte 20 points du budget (« API REST », § 13.2) : joint à
+la page, il pourrait la faire refuser ; un comptage refusé laisse simplement le total
+inconnu. `count_is_capped` s'affiche « 100 000+ », jamais un nombre rond inventé.
 
 ### 1.2 Virtualisation et chargement par curseur
 
@@ -375,7 +378,8 @@ sous le texte :
   tableau de bord — et de **toute question enregistrée, même par qui gère la base** : ce qu'on
   partage ne doit pas pouvoir écrire le jour où quelqu'un l'ouvre. Une table qu'on ne lit pas
   n'existe pas pour la requête ; un champ masqué est une colonne absente de `SELECT *` et
-  refusée si on la nomme.
+  refusée si on la nomme. Ce rôle porte la portée de la personne sur toutes les bases
+  qu'elle lit : insights s'en sert aussi (chapitre 19 §5.3).
 
 **Une question s'enregistre** — « Enregistrer » dans l'en-tête, qui demande son nom et sa
 portée, comme pour toute question — et une question SQL se range dans la navigation, sous les
@@ -1311,8 +1315,8 @@ est servie dans sa langue : la mise en page racine lit le cookie `basedb-locale`
 du compte, retenu par le navigateur, puisque l'écran de connexion et les pages partagées se
 dessinent avant que quiconque soit connu — et, à défaut, `Accept-Language`, puis place le
 catalogue de cette langue dans la page, avant tout script de l'application. Un lien peut
-demander une langue — `?lang=de`, comme le site public vers la démo — : le middleware
-(`apps/web/src/middleware.ts`) la retient dans ce cookie comme si elle avait été choisie,
+demander une langue — `?lang=de`, comme le site public vers la démo — : le proxy de Next
+(`apps/web/src/proxy.ts`) la retient dans ce cookie comme si elle avait été choisie,
 puis renvoie à la même adresse sans le paramètre, pour qu'un rechargement n'écrase pas,
 plus tard, la langue du compte connecté. Changer de langue recharge la page : une table de
 libellés appelle `$t` une fois, au chargement de son module. L'application ne se dessine que dans le navigateur (`I18nRoot`) : le serveur ne

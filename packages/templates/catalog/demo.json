@@ -754,66 +754,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Pilotage de l'agence",
-      "description": "L'essentiel en un coup d'œil.",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Projets en cours",
-          "table": "projets",
-          "aggregate": "count",
-          "filter": "[Statut] eq \"En cours\""
-        },
-        {
-          "kind": "number",
-          "title": "Encaissé (HT)",
-          "table": "factures",
-          "aggregate": "sum",
-          "field": "Montant HT",
-          "filter": "[Payée] eq true"
-        },
-        {
-          "kind": "number",
-          "title": "Note moyenne des avis",
-          "table": "avis",
-          "aggregate": "avg",
-          "field": "Note"
-        },
-        {
-          "kind": "chart",
-          "title": "Tâches par statut",
-          "table": "taches",
-          "group_by": "Statut",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "chart",
-          "title": "Sentiment des avis",
-          "table": "avis",
-          "group_by": "Sentiment",
-          "style": "pie"
-        },
-        {
-          "kind": "list",
-          "title": "Prochaines échéances",
-          "table": "taches",
-          "fields": ["Titre", "Échéance", "Priorité"],
-          "filter": "[Statut] ne \"Fait\"",
-          "sort": "Échéance",
-          "limit": 6,
-          "width": 2
-        },
-        {
-          "kind": "text",
-          "title": "Bienvenue",
-          "body": "Cette base est une démonstration. Ouvrez « Avis clients » pour voir l'IA lire les avis, « Tâches » pour les vues kanban, calendrier et dépendances, et « Automatisations » pour ce qui se passe quand une tâche est terminée."
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Tâche terminée",

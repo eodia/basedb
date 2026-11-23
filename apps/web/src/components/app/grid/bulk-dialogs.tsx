@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import type { SearchLink } from '@/components/app/pickers'
 import { PanelField, writeValues } from '@/components/app/record-panel'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,6 @@ import {
 import { Label } from '@/components/ui/label'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
-import { useRef, useState } from 'react'
 
 /**
  * The two questions a bulk edit may ask — chapter 11 §2.4.

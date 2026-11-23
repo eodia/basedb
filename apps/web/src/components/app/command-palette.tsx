@@ -1,59 +1,5 @@
 'use client'
 
-import type { AdminTab } from '@/components/app/admin/admin-panel'
-import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
-import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
-import { LookIcon } from '@/components/app/option-badge'
-import type { SettingsTab } from '@/components/app/settings/settings-panel'
-import type { BaseIntent, Section, TableIntent } from '@/components/app/sidebar'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Kbd, useModKey } from '@/components/ui/kbd'
-import { type Place, placeOf } from '@/lib/address-bar'
-import {
-  type Automation,
-  type Dashboard,
-  type DescribedBase,
-  type Field,
-  type Me,
-  type Project,
-  type ProjectBase,
-  type Question,
-  type SavedView,
-  type Table,
-  api,
-} from '@/lib/api/client'
-import { withoutBase } from '@/lib/base-path'
-import { displayStored, isDateKind } from '@/lib/dates'
-import { quoteLiteral } from '@/lib/expression'
-import { formatNumber } from '@/lib/format'
-import { searchClause } from '@/lib/grid'
-import { $t, $tp, intlLocale } from '@/lib/i18n'
-import { htmlToPlain } from '@/lib/rich-text'
-import {
-  MATCH,
-  type Prepared,
-  UUID,
-  type Visit,
-  excerpt,
-  fold,
-  frecency,
-  highlights,
-  looksLikeQuestion,
-  prepare,
-  remember,
-  runsOf,
-  scoreOf,
-  scoreToken,
-  tokensOf,
-  visits,
-} from '@/lib/search'
-import { isPaletteKey, usePalette } from '@/lib/store/palette'
-import { useSidebar } from '@/lib/store/sidebar'
-import { type Tab, useWorkspace } from '@/lib/store/workspace'
-import { type ThemePreference, useTheme } from '@/lib/theme'
-import { redo, undo, useJournal } from '@/lib/undo'
-import { cn } from '@/lib/utils'
-import { KIND_INFO } from '@/lib/views'
 import {
   ArrowLeft,
   ArrowRight,
@@ -98,19 +44,73 @@ import {
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import type { AdminTab } from '@/components/app/admin/admin-panel'
+import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
+import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
+import { LookIcon } from '@/components/app/option-badge'
+import type { SettingsTab } from '@/components/app/settings/settings-panel'
+import type { BaseIntent, Section, TableIntent } from '@/components/app/sidebar'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Kbd, useModKey } from '@/components/ui/kbd'
+import { type Place, placeOf } from '@/lib/address-bar'
+import {
+  type Automation,
+  api,
+  type DescribedBase,
+  type Field,
+  type Me,
+  type Project,
+  type ProjectBase,
+  type Question,
+  type SavedView,
+  type Table,
+} from '@/lib/api/client'
+import { withoutBase } from '@/lib/base-path'
+import { displayStored, isDateKind } from '@/lib/dates'
+import { quoteLiteral } from '@/lib/expression'
+import { formatNumber } from '@/lib/format'
+import { searchClause } from '@/lib/grid'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { useInsightsAvailable } from '@/lib/insights'
+import { htmlToPlain } from '@/lib/rich-text'
+import {
+  excerpt,
+  fold,
+  frecency,
+  highlights,
+  looksLikeQuestion,
+  MATCH,
+  type Prepared,
+  prepare,
+  remember,
+  runsOf,
+  scoreOf,
+  scoreToken,
+  tokensOf,
+  UUID,
+  type Visit,
+  visits,
+} from '@/lib/search'
+import { isPaletteKey, usePalette } from '@/lib/store/palette'
+import { useSidebar } from '@/lib/store/sidebar'
+import { type Tab, useWorkspace } from '@/lib/store/workspace'
+import { type ThemePreference, useTheme } from '@/lib/theme'
+import { redo, undo, useJournal } from '@/lib/undo'
+import { cn } from '@/lib/utils'
+import { KIND_INFO } from '@/lib/views'
 
 /**
  * The command palette — Ctrl+K, or the search field of the top bar.
  *
  * One field for everything the screen can reach: the projects, bases, tables, SQL views,
- * saved queries, saved views, questions, dashboards and automations the reader sees; the
+ * saved queries, saved views, questions and automations the reader sees; the
  * columns of their tables; the ROWS themselves, read through the API with the reader's own
  * rights; and every command of the application — create, go to, close, undo, change the
  * theme. What is typed is matched without accents nor case, by word starts, initials and
  * slips (`lib/search.ts`); what was opened often and lately comes first.
  *
- * It reads a few things more than the screen does: when it opens, the dashboards, questions
- * and automations of the project's bases, and the saved views of the current base's
+ * It reads a few things more than the screen does: when it opens, the questions and
+ * automations of the project's bases, and the saved views of the current base's
  * tables — each at most every two minutes. The rows are asked for as one types, a few per
  * table, once the typing pauses.
  *
@@ -272,7 +272,6 @@ interface RowHit {
 
 /** What the palette reads of a base when it opens, beyond its description. */
 interface BaseLists {
-  readonly dashboards: readonly Dashboard[]
   readonly questions: readonly Question[]
   readonly automations: readonly Automation[]
 }
@@ -289,18 +288,16 @@ const viewsCache = new Map<
   { readonly at: number; readonly promise: Promise<readonly TableView[]> }
 >()
 
-/** A base's dashboards, questions and automations — each refused one is simply none. */
+/** A base's questions and automations — each refused one is simply none. */
 function listsOf(base: ProjectBase): Promise<BaseLists> {
   const cached = listsCache.get(base.name)
   if (cached !== undefined && Date.now() - cached.at < LISTS_TTL) return cached.promise
   const manages = base.actions.includes('manage_schema')
   const promise = Promise.allSettled([
-    api.dashboards(base.name),
     api.questions(base.name),
     // Automations are read under `/admin`: asked only by whoever builds the base.
     manages ? api.automations(base.name) : Promise.resolve([] as readonly Automation[]),
-  ]).then(([dashboards, questions, automations]) => ({
-    dashboards: dashboards.status === 'fulfilled' ? dashboards.value : [],
+  ]).then(([questions, automations]) => ({
     questions: questions.status === 'fulfilled' ? questions.value : [],
     automations: automations.status === 'fulfilled' ? automations.value : [],
   }))
@@ -332,7 +329,6 @@ const KIND_WORDS = {
   sqlview: $t('vue sql||mots-clés de recherche'),
   query: $t('requête sql enregistrée||mots-clés de recherche'),
   field: $t('colonne champ||mots-clés de recherche'),
-  dashboard: $t('tableau de bord||mots-clés de recherche'),
   question: $t('question graphique||mots-clés de recherche'),
   automation: $t('automatisation||mots-clés de recherche'),
 } as const
@@ -483,7 +479,7 @@ export function SearchField({ className }: { readonly className?: string }) {
 interface Props {
   readonly me: Me
   readonly projects: readonly Project[]
-  /** The project browsed — whose bases' dashboards and questions are read. */
+  /** The project browsed — whose bases' questions and automations are read. */
   readonly project: Project | null
   /** The current base: its commands, its rows. */
   readonly base: DescribedBase | null
@@ -577,23 +573,20 @@ function Palette({
 
   const allBases = useMemo(() => projects.flatMap((p) => p.bases), [projects])
   const projectBaseOf = useMemo(() => new Map(allBases.map((b) => [b.name, b])), [allBases])
-  const projectOf = useMemo(
-    () => new Map(projects.flatMap((p) => p.bases.map((b) => [b.name, p] as const))),
-    [projects],
-  )
 
   /** The base the commands and the rows speak of: the one searched in, else the current one. */
   const targetName = scope?.base ?? base?.name ?? null
   const target = targetName === null ? null : (projectBaseOf.get(targetName) ?? null)
   const targetDescribed = targetName === null ? null : (described[targetName] ?? null)
   const activeTab = tabs.find((t) => t.id === activeId) ?? null
+  const dashboards = useInsightsAvailable() === true
 
   // ── What is read when the palette opens ─────────────────────────────────────────
 
   const [lists, setLists] = useState<Readonly<Record<string, BaseLists>>>({})
   const [views, setViews] = useState<Readonly<Record<string, readonly TableView[]>>>({})
 
-  // The project's bases: their dashboards, questions and automations, and their columns.
+  // The project's bases: their questions and automations, and their columns.
   const projectBases = project?.bases
   useEffect(() => {
     let stale = false
@@ -825,31 +818,6 @@ function Palette({
     for (const [name, found] of Object.entries(lists)) {
       const b = projectBaseOf.get(name)
       if (b === undefined) continue
-      for (const d of found.dashboards) {
-        const place: Place = {
-          kind: 'dashboards',
-          base: name,
-          focus: { kind: 'dashboard', id: d.id },
-        }
-        items.push({
-          key: `dashboard:${d.id}`,
-          group: 'analytics',
-          title: d.label,
-          subtitle: $t('Tableau de bord · {base}', { base: b.label }),
-          icon: <LayoutDashboard className="size-4" />,
-          searchable: prepare({
-            title: d.label,
-            keywords: `${KIND_WORDS.dashboard} ${d.description ?? ''}`,
-            context: b.label,
-          }),
-          base: name,
-          weight: 3,
-          place,
-          memorable: true,
-          detail: { kind: 'text', text: d.description },
-          run: go(place),
-        })
-      }
       for (const q of found.questions) {
         const place: Place = { kind: 'question', base: name, id: q.id }
         const chart = q.visualization.type
@@ -1040,17 +1008,19 @@ function Palette({
           place: { kind: 'section', base: name, section: 'history' },
         },
       )
-      here(
-        `dashboards:${name}`,
-        $t('Tableaux de bord de « {base} »', { base: label }),
-        goTo,
-        LayoutDashboard,
-        at({ kind: 'dashboards', base: name, focus: null }),
-        {
-          keywords: $t('graphiques statistiques indicateurs||mots-clés de recherche'),
-          place: { kind: 'dashboards', base: name, focus: null },
-        },
-      )
+      if (dashboards) {
+        here(
+          `dashboards:${name}`,
+          $t('Tableaux de bord de « {base} »', { base: label }),
+          goTo,
+          LayoutDashboard,
+          at({ kind: 'section', base: name, section: 'dashboards' }),
+          {
+            keywords: $t('graphiques statistiques indicateurs||mots-clés de recherche'),
+            place: { kind: 'section', base: name, section: 'dashboards' },
+          },
+        )
+      }
       if (manages) {
         here(
           `automations:${name}`,
@@ -1251,7 +1221,7 @@ function Palette({
       () => useSidebar.getState().toggle(),
       { keywords: $t('navigation menu gauche||mots-clés de recherche'), memorable: false },
     )
-    if (section === 'data' || section === 'dashboards' || section === 'automations') {
+    if (section === 'data' || section === 'automations') {
       add(
         'copilot',
         copilotOpen ? $t('Fermer le Copilot') : $t('Ouvrir le Copilot'),
@@ -1329,6 +1299,7 @@ function Palette({
     return items
   }, [
     target,
+    dashboards,
     project,
     scope,
     section,

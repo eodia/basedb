@@ -74,13 +74,6 @@
   "Par catégorie": "By category",
   "Journal": "Log",
   "Calendrier": "Calendar",
-  "Stocks": "Inventory",
-  "Articles à commander": "Items to reorder",
-  "Articles suivis": "Items tracked",
-  "Sorties ce mois-ci": "Outgoing this month",
-  "Articles par catégorie": "Items by category",
-  "Mouvements par type": "Movements by type",
-  "Derniers mouvements": "Recent movements",
   "Grosse sortie": "Large outgoing movement",
   "Prévient quand une sortie dépasse 50 unités.": "Notifies you when an outgoing movement exceeds 50 units.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Large outgoing movement: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formulas",
   "Galerie": "Gallery",
   "IA": "AI",
+  "Stocks": "Inventory",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "The items in stock, their suppliers, and incoming and outgoing movements."
 }

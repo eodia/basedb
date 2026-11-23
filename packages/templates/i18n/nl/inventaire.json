@@ -74,13 +74,6 @@
   "Par catégorie": "Per categorie",
   "Journal": "Logboek",
   "Calendrier": "Kalender",
-  "Stocks": "Voorraad",
-  "Articles à commander": "Te bestellen artikelen",
-  "Articles suivis": "Gevolgde artikelen",
-  "Sorties ce mois-ci": "Uitgaand deze maand",
-  "Articles par catégorie": "Artikelen per categorie",
-  "Mouvements par type": "Bewegingen per type",
-  "Derniers mouvements": "Laatste bewegingen",
   "Grosse sortie": "Grote uitgaande beweging",
   "Prévient quand une sortie dépasse 50 unités.": "Waarschuwt wanneer een uitgaande beweging meer dan 50 eenheden bedraagt.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Grote uitgaande beweging: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formules",
   "Galerie": "Galerie",
   "IA": "AI",
+  "Stocks": "Voorraad",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "De artikelen op voorraad, hun leveranciers en de in- en uitgaande bewegingen."
 }

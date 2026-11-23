@@ -1,5 +1,18 @@
 'use client'
 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Layers,
+  Palette,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,19 +36,6 @@ import { $t, $tp } from '@/lib/i18n'
 import { PRESET_COLORS } from '@/lib/options'
 import type { ColorRule, ColorStyle, RowHeight } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Layers,
-  Palette,
-  Plus,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-  X,
-} from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 /**
  * The grid's own controls in the toolbar (chapter 11 §1.6): the quick search, the

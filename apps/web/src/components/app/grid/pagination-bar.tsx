@@ -1,5 +1,16 @@
 'use client'
 
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  Download,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,23 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type TableRef, api } from '@/lib/api/client'
+import { api, type TableRef } from '@/lib/api/client'
 import { type ExportFormat, saveBlob } from '@/lib/export'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { PAGE_SIZES } from '@/lib/store/workspace'
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  Download,
-  Hash,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * The bottom bar — page size, count, exports, refresh, pagination.
@@ -39,9 +38,8 @@ import { toast } from 'sonner'
  * else, because those are the three moves a cursor supports. A box to type a page number
  * into would be a control that cannot work.
  *
- * The total is absent until asked for. §1.1: `count` is not computed by default, a
- * button emits `count=exact`, and a capped result reads "100 000+" — never a rounded
- * number invented to fill the slot.
+ * The total comes on its own, asked beside the page (§1.1): a spinner until it lands, and
+ * a capped result reads "100 000+" — never a rounded number invented to fill the slot.
  */
 
 /**
@@ -67,14 +65,11 @@ interface Props {
   readonly totalCapped: boolean
   readonly counting: boolean
   readonly loading: boolean
-  /** False on a SQL tab: a result already knows its size, so there is nothing to count. */
-  readonly countable: boolean
   readonly onPageSize: (size: number) => void
   readonly onFirst: () => void
   readonly onPrevious: () => void
   readonly onNext: () => void
   readonly onRefresh: () => void
-  readonly onCount: () => void
   readonly onExport: (format: ExportFormat) => void
   /** Absent on a SQL result, which is not a table: only the page exports there. */
   readonly exportView?: ExportViewSpec
@@ -91,13 +86,11 @@ export function PaginationBar({
   totalCapped,
   counting,
   loading,
-  countable,
   onPageSize,
   onFirst,
   onPrevious,
   onNext,
   onRefresh,
-  onCount,
   onExport,
   exportView,
 }: Props) {
@@ -173,37 +166,22 @@ export function PaginationBar({
         ) : (
           <>
             {format(first)}–{format(last)}
-            {total !== null && (
+            {total !== null ? (
               <>
                 <span className="mx-1 opacity-40">/</span>
                 {totalCapped ? '100 000+' : format(total)}
               </>
+            ) : (
+              counting && (
+                <Loader2
+                  className="ml-1.5 inline size-3 animate-spin align-[-2px]"
+                  aria-label={$t('Comptage des lignes…')}
+                />
+              )
             )}
           </>
         )}
       </span>
-
-      {countable && total === null && rowCount > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 px-2"
-              onClick={onCount}
-              disabled={counting}
-            >
-              {counting ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Hash className="size-3.5" />
-              )}
-              {$t('Compter')}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{$t('Calculer le nombre total de lignes')}</TooltipContent>
-        </Tooltip>
-      )}
 
       <div className="mx-1 h-4 w-px bg-border" />
 

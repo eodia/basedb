@@ -1,38 +1,38 @@
 'use client'
 
-import type { Field } from '@/lib/api/client'
 import {
-  KEYWORDS,
-  LIST_OPERATORS,
-  VALUELESS,
-  check,
-  flatten,
-  format,
-  tokenize,
-} from '@/lib/expression'
-import { $t } from '@/lib/i18n'
-import {
+  autocompletion,
   type Completion,
   type CompletionContext,
   type CompletionResult,
-  autocompletion,
   closeBrackets,
   closeBracketsKeymap,
   completionKeymap,
 } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { type Diagnostic, lintGutter, linter } from '@codemirror/lint'
+import { type Diagnostic, linter, lintGutter } from '@codemirror/lint'
 import { Compartment, EditorState } from '@codemirror/state'
 import {
   Decoration,
   type DecorationSet,
   EditorView,
-  ViewPlugin,
-  type ViewUpdate,
   keymap,
   placeholder as placeholderExtension,
+  ViewPlugin,
+  type ViewUpdate,
 } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
+import type { Field } from '@/lib/api/client'
+import {
+  check,
+  flatten,
+  format,
+  KEYWORDS,
+  LIST_OPERATORS,
+  tokenize,
+  VALUELESS,
+} from '@/lib/expression'
+import { $t } from '@/lib/i18n'
 
 /**
  * The expression editor — chapter 08 §4, with the ergonomics of a code editor.
@@ -438,4 +438,4 @@ function diagnosticsFor(
 }
 
 /** Re-exported so the toolbar button and the shortcut stay the same code. */
-export { format, flatten }
+export { flatten, format }

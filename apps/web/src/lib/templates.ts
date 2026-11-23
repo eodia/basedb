@@ -1,5 +1,5 @@
-import { $t, $tp } from '@/lib/i18n'
 import type { TemplateApplyReport, TemplateStep } from '@basedb/contracts'
+import { $t, $tp } from '@/lib/i18n'
 
 /**
  * Base templates as the interface shows their building — chapter 20 §4. The building itself
@@ -37,8 +37,6 @@ export function stepText(step: TemplateStep): string {
       return $t('Bouton « {label} »…', { label: step.label })
     case 'view':
       return $t('Vue « {label} »…', { label: step.label })
-    case 'dashboard':
-      return $t('Tableau de bord « {label} »…', { label: step.label })
   }
 }
 

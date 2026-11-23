@@ -10,22 +10,14 @@
  * psql — and never by an identifier the user would have to look up.
  */
 
-import { withBase } from '@/lib/base-path'
-import { $t, locale } from '@/lib/i18n'
 import type {
   Constraint,
-  DashboardCard,
-  DashboardCopilotAnswer,
-  DashboardParameter,
-  DashboardTab,
   FormAlign,
   FormCondition,
   FormFont,
   FormPrefill,
   FormTheme,
-  LegacyBlock,
   Locale,
-  ParameterValue,
   QueryResult,
   QuestionQuery,
   QuizAnswer,
@@ -38,6 +30,8 @@ import type {
   Visualization,
 } from '@basedb/contracts'
 import { isLocale } from '@basedb/contracts'
+import { withBase } from '@/lib/base-path'
+import { $t, locale } from '@/lib/i18n'
 
 declare global {
   interface Window {
@@ -907,6 +901,26 @@ export interface CopilotMessage {
   readonly role: 'user' | 'assistant'
   readonly content: string
 }
+
+/** A file attached to a copilot conversation, as read by the server — nothing of it is kept. */
+export interface ReadAttachment {
+  readonly name: string
+  readonly kind: 'pdf' | 'sheet' | 'document' | 'slides' | 'text' | 'image'
+  readonly text: string
+  readonly chars: number
+  readonly truncated: boolean
+  /** Pages, sheets or slides. */
+  readonly parts: number | null
+  readonly media_type: string | null
+}
+
+/** An attachment as a copilot turn sends it: its text, or the image itself. */
+export type CopilotAttachment =
+  | { readonly name: string; readonly text: string }
+  | {
+      readonly name: string
+      readonly image: { readonly media_type: string; readonly data: string }
+    }
 
 /** A column the copilot proposes. `target` names a table; `prompt` is an AI column's. */
 export interface CopilotField {
@@ -1822,16 +1836,58 @@ export interface Integration {
   readonly created_at: string
 }
 
-export type SyncSourceKind = 'csv' | 'ics' | 'basedb'
+export type SyncSourceKind = 'csv' | 'ics' | 'basedb' | 'insights'
 
-export interface SyncedTable {
+/** How a synchronisation writes: mirror, update and add, add only, replace all, or keep every pass. */
+export type SyncMode = 'mirror' | 'upsert' | 'insert' | 'replace' | 'snapshot'
+/** When it runs: every so many minutes, once a day at an hour, or by hand only. */
+export type SyncSchedule = 'interval' | 'daily' | 'manual'
+
+/** A column of a source, as the synchronisation reads it. */
+export interface SyncSourceColumn {
+  readonly key: string
+  readonly label: string
+  readonly kind: string
+}
+
+/** What a source holds, before a table is made of it. */
+export interface SyncPreview {
+  readonly columns: readonly SyncSourceColumn[]
+  readonly rows: ReadonlyArray<{
+    readonly key: string
+    readonly values: Readonly<Record<string, unknown>>
+  }>
+  readonly total: number
+}
+
+export interface SyncSettings {
+  readonly mode: SyncMode
+  readonly schedule: SyncSchedule
+  readonly interval_minutes: number
+  readonly daily_at: string | null
+  readonly time_zone: string
+  readonly key_columns: readonly string[]
+}
+
+export interface SyncSourceInput {
+  readonly kind: SyncSourceKind
+  readonly url?: string
+  /** For `insights`: the saved question, and the values of its variables. */
+  readonly question?: string
+  readonly parameters?: Readonly<Record<string, unknown>>
+}
+
+export interface SyncedTable extends SyncSettings {
   readonly table_id: string
   readonly table: string
   readonly label: string
   readonly source_kind: SyncSourceKind
   readonly host: string
-  readonly interval_minutes: number
-  readonly next_sync_at: string
+  readonly columns: readonly SyncSourceColumn[]
+  readonly question: { readonly id: string; readonly name: string } | null
+  readonly parameters: Readonly<Record<string, unknown>>
+  /** `null`: by hand only. */
+  readonly next_sync_at: string | null
   readonly last_synced_at: string | null
   readonly last_status: 'ok' | 'failed' | null
   readonly last_error: string | null
@@ -1840,6 +1896,14 @@ export interface SyncedTable {
     readonly updated: number
     readonly deleted: number
   } | null
+}
+
+/** insights, beside basedb (chapter 19 §5): an item it holds. */
+export interface InsightsItem {
+  readonly id: string
+  readonly kind: 'question' | 'dashboard' | 'model' | 'metric'
+  readonly name: string
+  readonly description: string | null
 }
 
 /** The iCalendar feed of a shared calendar or timeline, as an agenda subscribes to it. */
@@ -1876,25 +1940,7 @@ export interface TemplateDraft {
   readonly issues: readonly TemplateIssue[]
 }
 
-// ── Dashboards — chapter 18 ──────────────────────────────────────────────────
-
-/**
- * A block of the first dashboards, before the grid. Still what a base template brings; the
- * server makes cards of it.
- */
-export type DashboardBlock = LegacyBlock
-
-/** A dashboard: cards on a grid, in tabs, under filters (chapter 18). */
-export interface Dashboard {
-  readonly id: string
-  readonly label: string
-  readonly description: string | null
-  readonly position: number
-  readonly tabs: readonly DashboardTab[]
-  readonly cards: readonly DashboardCard[]
-  readonly parameters: readonly DashboardParameter[]
-  readonly updated_at: string
-}
+// ── Questions — chapter 18 ───────────────────────────────────────────────────
 
 /**
  * A saved question (chapter 18 §1): built with the mouse or written in SQL, with the way it
@@ -2469,85 +2515,6 @@ export interface SharedView {
   readonly next_cursor: string | null
 }
 
-/** Why a shared dashboard does not open — or `open` (chapter 18 §2.5). */
-export type DashboardShareState = 'open' | 'inactive' | 'authority'
-
-export interface DashboardShare {
-  readonly id: string
-  readonly dashboard_id: string
-  readonly access: ShareAccess
-  readonly active: boolean
-  /** The secret of the link: the page is `/d/<token>`. */
-  readonly token: string
-  readonly published_by: { readonly id: string; readonly name: string | null }
-  readonly groups: readonly string[]
-  readonly state: DashboardShareState
-  readonly can_embed: boolean
-}
-
-export interface DashboardSharing {
-  readonly share: DashboardShare | null
-  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
-}
-
-export interface DashboardShareSettings {
-  readonly access: ShareAccess
-  readonly active: boolean
-  readonly groups: readonly string[]
-  readonly can_embed?: boolean
-}
-
-/** A card of a shared dashboard: where it sits and how it shows — never what it runs. */
-export interface SharedDashboardCard {
-  readonly id: string
-  readonly tab: string | null
-  readonly x: number
-  readonly y: number
-  readonly w: number
-  readonly h: number
-  readonly kind: DashboardCard['kind']
-  readonly title: string
-  readonly text?: string
-  /** The text is HTML, not Markdown. */
-  readonly rich?: boolean
-  /** What the text cites, without what it runs. */
-  readonly variables?: readonly SharedTextVariable[]
-  readonly url?: string
-  readonly visualization?: Visualization
-  /** Its question sorts its rows itself: the chart keeps their order. */
-  readonly sorted: boolean
-  /** The filters tied to it — for a text, those of the questions it cites, and those it cites. */
-  readonly filters: readonly string[]
-}
-
-/** A value a shared text cites: a question, run by its name, or a filter's value. */
-export type SharedTextVariable =
-  | {
-      readonly name: string
-      readonly kind: 'question'
-      readonly visualization: Visualization
-      readonly filters: readonly string[]
-    }
-  | { readonly name: string; readonly kind: 'parameter'; readonly parameter: string }
-
-/** A dashboard read through its link, and of the base the fields its cards show. */
-export interface SharedDashboard {
-  readonly title: string
-  readonly description: string | null
-  readonly access: ShareAccess
-  readonly reader: string | null
-  readonly can_embed: boolean
-  readonly tabs: readonly DashboardTab[]
-  readonly parameters: readonly DashboardParameter[]
-  readonly cards: readonly SharedDashboardCard[]
-  readonly tables: ReadonlyArray<{
-    readonly id: string
-    readonly name: string
-    readonly label: string
-    readonly fields: readonly SharedViewField[]
-  }>
-}
-
 /** A shared form as the person answering sees it. */
 export interface SharedForm {
   readonly kind: 'form' | 'survey' | 'quiz'
@@ -2624,44 +2591,6 @@ export interface QuizGrade {
  * the form wants a signed-in member, once more with the session's access token if there
  * is a session in this browser.
  */
-/** A shared dashboard once known to want a sign-in: its next reads carry the token at once. */
-let sharedWantsBearer = false
-
-/** A read of a shared dashboard: as anyone first, as the signed-in person when it asks. */
-async function sharedCall<T>(path: string, init?: RequestInit): Promise<T> {
-  const send = (bearer?: string) =>
-    fetch(`${BASE}${path}`, {
-      ...init,
-      headers: {
-        'content-type': 'application/json',
-        ...(bearer === undefined ? {} : { authorization: `Bearer ${bearer}` }),
-      },
-      credentials: 'include',
-      cache: 'no-store',
-    })
-  let bearer = sharedWantsBearer ? await accessToken().catch(() => undefined) : undefined
-  let r = await send(bearer)
-  if (r.status === 401 && bearer === undefined) {
-    bearer = await accessToken().catch(() => undefined)
-    if (bearer !== undefined) {
-      sharedWantsBearer = true
-      r = await send(bearer)
-    }
-  }
-  const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
-  if (!r.ok) {
-    throw new ApiError(
-      String(body.code ?? 'INTERNAL_ERROR'),
-      r.status,
-      String(body.request_id ?? ''),
-      typeof body.details === 'object' && body.details !== null
-        ? (body.details as Record<string, unknown>)
-        : {},
-    )
-  }
-  return (body as { data: T }).data
-}
-
 async function formCall<T>(path: string, init?: RequestInit): Promise<T> {
   const send = (bearer?: string) =>
     fetch(`${BASE}${path}`, {
@@ -4096,6 +4025,17 @@ export const api = {
     ),
 
   /**
+   * Reads a file attached to a copilot conversation: its text, or, for an image, its type.
+   * The body is the file, as for a field's file.
+   */
+  readAttachment: (file: File) =>
+    data<ReadAttachment>(`${v1()}/ai/attachments?name=${encodeURIComponent(file.name)}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'content-type': file.type === '' ? 'application/octet-stream' : file.type },
+    }),
+
+  /**
    * One turn of the copilot: the whole conversation goes, the answer comes back with its
    * proposals. `readData` is the person's consent to rows being read for this turn.
    */
@@ -4107,6 +4047,7 @@ export const api = {
       sort: string | null
       messages: readonly CopilotMessage[]
       readData: boolean
+      attachments?: readonly CopilotAttachment[]
     },
   ) =>
     data<CopilotAnswer>(`${v1()}/ai/bases/${encodeURIComponent(base)}/copilot`, {
@@ -4117,6 +4058,7 @@ export const api = {
         sort: request.sort,
         messages: request.messages,
         read_data: request.readData,
+        attachments: request.attachments ?? [],
       }),
     }),
 
@@ -4131,6 +4073,7 @@ export const api = {
       draft: AutomationInput | null
       messages: readonly CopilotMessage[]
       readData: boolean
+      attachments?: readonly CopilotAttachment[]
     },
   ) =>
     data<AutomationCopilotAnswer>(
@@ -4142,36 +4085,10 @@ export const api = {
           draft: request.draft,
           messages: request.messages,
           read_data: request.readData,
+          attachments: request.attachments ?? [],
         }),
       },
     ),
-
-  /**
-   * One turn of the copilot of the dashboards (chapter 18 §2.6): what is on screen goes
-   * with the conversation — the dashboard, its tab, its filters' values.
-   */
-  dashboardCopilot: (
-    base: string,
-    request: {
-      dashboard: string | null
-      tab: string | null
-      values: Readonly<Record<string, ParameterValue | null>>
-      messages: readonly CopilotMessage[]
-      readData: boolean
-    },
-  ) =>
-    data<DashboardCopilotAnswer>(`${v1()}/ai/bases/${encodeURIComponent(base)}/dashboard-copilot`, {
-      method: 'POST',
-      body: JSON.stringify({
-        dashboard: request.dashboard,
-        tab: request.tab,
-        values: request.values,
-        messages: request.messages,
-        read_data: request.readData,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        week_start: 1,
-      }),
-    }),
 
   /** Drafts tables, fields and links from a need — `structure_draft`. */
   draftStructure: (base: string, request: string) =>
@@ -4260,12 +4177,20 @@ export const api = {
   syncedTables: (base: string) =>
     data<readonly SyncedTable[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables`),
 
+  /** What a source holds — its columns, its first rows — before a table is made of it. */
+  previewSyncSource: (base: string, source: SyncSourceInput) =>
+    data<SyncPreview>(`${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables/preview`, {
+      method: 'POST',
+      body: JSON.stringify({ source }),
+    }),
+
   createSyncedTable: (
     base: string,
-    input: {
+    input: Partial<SyncSettings> & {
       label: string
-      source: { kind: SyncSourceKind; url: string }
-      interval_minutes: number
+      source: SyncSourceInput
+      /** The source's columns to keep; all when absent. */
+      columns?: readonly string[]
     },
   ) =>
     data<SyncedTable>(`${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables`, {
@@ -4273,7 +4198,11 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  updateSyncedTable: (base: string, table: string, input: { interval_minutes: number }) =>
+  updateSyncedTable: (
+    base: string,
+    table: string,
+    input: Partial<SyncSettings> & { parameters?: Readonly<Record<string, unknown>> },
+  ) =>
     data<SyncedTable>(
       `${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables/${encodeURIComponent(table)}`,
       { method: 'PATCH', body: JSON.stringify(input) },
@@ -4291,7 +4220,29 @@ export const api = {
       { method: 'POST' },
     ),
 
-  /** The dashboards of a base, for whoever sees it (chapter 18). */
+  /** insights beside basedb (chapter 19 §5): configured or not. */
+  insightsStatus: () =>
+    data<{ configured: boolean; public_url: string | null }>(`${v1()}/insights`),
+
+  /**
+   * The address that signs the person in to insights and opens `next` there — one minute.
+   * `embedded`: inside basedb's page, without insights' own chrome, in this theme and language.
+   */
+  insightsLink: (
+    next: string,
+    options: { embedded?: boolean; theme?: 'light' | 'dark'; lang?: string } = {},
+  ) =>
+    data<{ url: string }>(`${v1()}/insights/link`, {
+      method: 'POST',
+      body: JSON.stringify({ next, ...options }),
+    }),
+
+  /** Questions or dashboards of insights the person may read, by name. */
+  insightsSearch: (q: string, kind?: InsightsItem['kind']) =>
+    data<readonly InsightsItem[]>(
+      `${v1()}/insights/search?${new URLSearchParams({ q, ...(kind === undefined ? {} : { kind }) })}`,
+    ),
+
   /** The gallery: the instance's templates, the site's, the carried ones (chapter 20). */
   templates: async (): Promise<TemplateCatalog> => {
     const r = await call<{
@@ -4324,110 +4275,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(request),
     }),
-
-  dashboards: (base: string) =>
-    data<readonly Dashboard[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/dashboards`),
-
-  /** A dashboard: blocks of old (a template's), or cards. */
-  createDashboard: (
-    base: string,
-    input: {
-      label: string
-      description?: string | null
-      blocks?: readonly DashboardBlock[]
-      tabs?: readonly DashboardTab[]
-      cards?: readonly DashboardCard[]
-      parameters?: readonly DashboardParameter[]
-    },
-  ) =>
-    data<Dashboard>(`${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards`, {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }),
-
-  updateDashboard: (
-    base: string,
-    id: string,
-    input: {
-      label?: string
-      description?: string | null
-      tabs?: readonly DashboardTab[]
-      cards?: readonly DashboardCard[]
-      parameters?: readonly DashboardParameter[]
-      position?: number
-    },
-  ) =>
-    data<Dashboard>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}`,
-      { method: 'PATCH', body: JSON.stringify(input) },
-    ),
-
-  deleteDashboard: (base: string, id: string) =>
-    call<void>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}`,
-      { method: 'DELETE' },
-    ),
-
-  /** How a dashboard is shared: its link and settings, or none (chapter 18 §2.5). */
-  dashboardSharing: (base: string, id: string) =>
-    data<DashboardSharing>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
-    ),
-
-  /** Shares a dashboard, or changes how. Whoever saves becomes its publisher. */
-  saveDashboardSharing: (base: string, id: string, settings: DashboardShareSettings) =>
-    data<DashboardSharing>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
-      { method: 'PUT', body: JSON.stringify(settings) },
-    ),
-
-  /** A new link: the old one stops working at once. */
-  regenerateDashboardShare: (base: string, id: string) =>
-    data<DashboardSharing>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share/regenerate`,
-      { method: 'POST' },
-    ),
-
-  deleteDashboardShare: (base: string, id: string) =>
-    call<void>(
-      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
-      { method: 'DELETE' },
-    ),
-
-  /** Opens a shared dashboard by its link — no right on the base needed. */
-  sharedDashboard: (token: string) =>
-    sharedCall<SharedDashboard>(`/api/v1/dashboards/${encodeURIComponent(token)}`),
-
-  /** Runs one card of a shared dashboard, under the values of its filters. */
-  runSharedCard: (
-    token: string,
-    card: string,
-    values: Readonly<Record<string, ParameterValue | null>>,
-    signal?: AbortSignal,
-    /** The question the card's text cites under this name, rather than the card's own. */
-    variable?: string,
-  ) =>
-    sharedCall<QueryResult>(
-      `/api/v1/dashboards/${encodeURIComponent(token)}/cards/${encodeURIComponent(card)}${
-        variable === undefined ? '' : `/variables/${encodeURIComponent(variable)}`
-      }`,
-      {
-        method: 'POST',
-        signal,
-        body: JSON.stringify({
-          values,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          week_start: 1,
-        }),
-      },
-    ),
-
-  /** The values a category filter of a shared dashboard offers. */
-  sharedParameterValues: (token: string, parameter: string, signal?: AbortSignal) =>
-    sharedCall<ReadonlyArray<{ value: string; label: string; color: string | null }>>(
-      `/api/v1/dashboards/${encodeURIComponent(token)}/parameters/${encodeURIComponent(parameter)}/values`,
-      { signal },
-    ),
 
   /**
    * The regions a map draws — GeoJSON served beside the interface (`public/geo`), not by
@@ -4489,7 +4336,7 @@ export const api = {
 
   /**
    * Runs a question with the reader's rights — a saved one by its identifier, or one given
-   * whole — under a dashboard's filters. Dates are cut in the browser's zone.
+   * whole — under the filters set beside it. Dates are cut in the browser's zone.
    */
   runQuestion: (
     base: string,
@@ -4636,12 +4483,8 @@ export const api = {
   }) => call<void>(`${v1()}/presence`, { method: 'POST', body: JSON.stringify(request) }),
 
   /** Moves this stream's pointer over the grid, `null` when it leaves it. */
-  movePointer: (request: {
-    session: string
-    base: string
-    table: string
-    at: PointerAt | null
-  }) => call<void>(`${v1()}/presence/pointer`, { method: 'POST', body: JSON.stringify(request) }),
+  movePointer: (request: { session: string; base: string; table: string; at: PointerAt | null }) =>
+    call<void>(`${v1()}/presence/pointer`, { method: 'POST', body: JSON.stringify(request) }),
 
   /** The history of one row, newest first. */
   recordHistory: (table: TableRef, recordId: string, cursor?: string) =>

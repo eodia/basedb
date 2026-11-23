@@ -41,7 +41,7 @@ Klient, który potrafi uruchamiać wyłącznie programy lokalne (stdio), korzyst
 repozytorium, który odczytuje token ze zmiennej wskazanej przez `--token-env`:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

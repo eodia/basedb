@@ -1,5 +1,21 @@
 'use client'
 
+import {
+  Background,
+  BaseEdge,
+  type Edge,
+  EdgeLabelRenderer,
+  type EdgeProps,
+  getSmoothStepPath,
+  Handle,
+  type Node,
+  type NodeProps,
+  Panel,
+  Position,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+} from '@xyflow/react'
 import { Button } from '@/components/ui/button'
 import { Hint } from '@/components/ui/tooltip'
 import type {
@@ -11,59 +27,42 @@ import type {
 } from '@/lib/api/client'
 import {
   END_NODE,
-  FRAME_BOTTOM,
   type FlowEdge,
   type FlowNode,
-  GAP_Y,
-  MERGE_SIZE,
-  STEP_SIZE,
-  type Slot,
-  TRIGGER_NODE,
+  FRAME_BOTTOM,
   frameOf,
+  GAP_Y,
   layoutFlow,
+  MERGE_SIZE,
   mergeOf,
+  type Slot,
+  STEP_SIZE,
+  TRIGGER_NODE,
 } from '@/lib/automation-layout'
 import {
+  allSteps,
   type Draft,
   type DraftPath,
   type DraftStep,
-  type PathHolder,
-  type RunStepRecord,
-  STEP_LABELS,
-  type StepKind,
-  TRIGGER_LABELS,
-  allSteps,
   findPath,
   offsetText,
+  type PathHolder,
   pathSummary,
+  type RunStepRecord,
   runStepSentence,
   runStepsById,
+  STEP_LABELS,
+  type StepKind,
   stepProblem,
   stepSummary,
+  TRIGGER_LABELS,
   triggerHasTable,
   triggerProblem,
 } from '@/lib/automations'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import {
-  Background,
-  BaseEdge,
-  type Edge,
-  EdgeLabelRenderer,
-  type EdgeProps,
-  Handle,
-  type Node,
-  type NodeProps,
-  Panel,
-  Position,
-  ReactFlow,
-  ReactFlowProvider,
-  getSmoothStepPath,
-  useReactFlow,
-} from '@xyflow/react'
 import '@xyflow/react/dist/base.css'
 import './automation-flow.css'
-import { $t, weekdayNames } from '@/lib/i18n'
 import {
   Bell,
   CalendarClock,
@@ -98,6 +97,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { createContext, useContext, useEffect, useMemo } from 'react'
+import { $t, weekdayNames } from '@/lib/i18n'
 
 /**
  * An automation's flow, drawn — chapter 17 on the canvas: the trigger on top, each step a
@@ -802,8 +802,8 @@ function Canvas({
         minZoom={0.3}
         maxZoom={1.5}
         fitView
-        fitViewOptions={{ maxZoom: 1, minZoom: 0.6, padding: 0.12 }}
-        colorMode={theme}
+        fitViewOptions={{ maxZoom: 1, minZoom: 0.6, padding: '5%' }}
+        forceColorMode={theme}
         className="automation-flow"
         aria-label={$t('Le flux de l’automatisation')}
       >
@@ -837,7 +837,7 @@ function Canvas({
               size="icon-sm"
               className="bg-card"
               aria-label={$t('Tout voir')}
-              onClick={() => void flow.fitView({ maxZoom: 1, padding: 0.12, duration: 200 })}
+              onClick={() => void flow.fitView({ maxZoom: 1, padding: '5%', duration: 200 })}
             >
               <Maximize className="size-4" />
             </Button>

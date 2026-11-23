@@ -1,25 +1,25 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Loader2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import type { Row } from '@/components/app/grid/cell'
-import { RecordCard, coverOf } from '@/components/app/views/card'
+import { coverOf, RecordCard } from '@/components/app/views/card'
 import { usePagedRows } from '@/components/app/views/paged'
 import { Button } from '@/components/ui/button'
 import type { Field, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { type GallerySpec, nextHandOrder, orderByHand, pick, titleFieldOf } from '@/lib/views'
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Loader2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
 
 /**
  * The gallery — a card per row, its cover first (ch. 11 §1.6): the first image of the

@@ -1,6 +1,5 @@
 'use client'
 
-import type { DescribedBase } from '@/lib/api/client'
 import {
   autocompletion,
   closeBrackets,
@@ -12,11 +11,11 @@ import { PostgreSQL, type SQLNamespace, sql } from '@codemirror/lang-sql'
 import {
   bracketMatching,
   foldGutter,
+  HighlightStyle,
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language'
-import { HighlightStyle } from '@codemirror/language'
-import { type Diagnostic, lintGutter, linter } from '@codemirror/lint'
+import { type Diagnostic, linter, lintGutter } from '@codemirror/lint'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorSelection, EditorState } from '@codemirror/state'
 import {
@@ -29,6 +28,7 @@ import {
 } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { useEffect, useRef } from 'react'
+import type { DescribedBase } from '@/lib/api/client'
 
 /**
  * The SQL editor.

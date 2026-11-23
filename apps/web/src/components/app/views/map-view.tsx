@@ -1,16 +1,16 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import type { Row } from '@/components/app/grid/cell'
-import { Unavailable } from '@/components/app/views/kanban-view'
-import { loadRows } from '@/components/app/views/load'
-import { type Field, type Place, type Table, api } from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import type { MapSpec } from '@/lib/views'
 import type { Map as LeafletMap } from 'leaflet'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Row } from '@/components/app/grid/cell'
+import { Unavailable } from '@/components/app/views/kanban-view'
+import { loadRows } from '@/components/app/views/load'
+import { api, type Field, type Place, type Table } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import type { MapSpec } from '@/lib/views'
 import { colorOf, titleOf } from './card'
 
 /**
@@ -171,7 +171,7 @@ export function MapView({
     return { out, unplaced }
   }, [rows, places, placedBy, address, latitude, longitude])
 
-  const host = useRef<HTMLDivElement>(null)
+  const host = useRef<HTMLElement>(null)
   const map = useRef<LeafletMap | null>(null)
   const layer = useRef<import('leaflet').LayerGroup | null>(null)
   const fitted = useRef(false)
@@ -252,7 +252,7 @@ export function MapView({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div
+      <section
         ref={host}
         className="z-0 min-h-0 flex-1"
         aria-label={$t('Carte des lignes de {label}', { label: table.label })}

@@ -1,11 +1,13 @@
 'use client'
 
+import { Check, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import {
   FormError,
-  PRESSABLE,
   PasswordInput,
-  REVEAL,
+  PRESSABLE,
   pauseOnSuccess,
+  REVEAL,
   revealAt,
 } from '@/components/auth-layout'
 import { Button } from '@/components/ui/button'
@@ -15,8 +17,6 @@ import { ApiError } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Check, Loader2 } from 'lucide-react'
-import { useState } from 'react'
 
 /** The policy's first rule, shown filling up as the password is typed. */
 const MIN_LENGTH = 8

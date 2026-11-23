@@ -1,8 +1,8 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import * as SwitchPrimitive from '@radix-ui/react-switch'
 import type { ComponentProps } from 'react'
+import { cn } from '@/lib/utils'
 
 /** An on/off switch — Radix underneath, so the keyboard and the screen readers are right. */
 export function Switch({ className, ...props }: ComponentProps<typeof SwitchPrimitive.Root>) {

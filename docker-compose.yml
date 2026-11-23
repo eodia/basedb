@@ -1,29 +1,83 @@
-# basedb — PostgreSQL and basedb (the API, the MCP server and the interface in one image).
+# basedb — PostgreSQL, basedb (the API, the MCP server and the interface in one image) and
+# insights beside it.
 #
-#   cp .env.example .env        # then set POSTGRES_PASSWORD and BASEDB_ENCRYPTION_KEY
 #   docker compose up -d        # pulls eodia/basedb; `--build` builds it from this clone
 #   docker compose logs basedb  # the administrator's password, printed once
 #
+# No .env needed: the secrets are drawn on the first start (the `secrets` service below).
 # Everything on http://localhost:3000 — the interface, the API under /api, the MCP server
 # under /mcp — published on 127.0.0.1 only. To serve it on a domain with HTTPS (Caddy,
 # automatic certificates):
 #
 #   docker compose --profile https up -d               # with BASEDB_DOMAIN set in .env
 #
+# insights is installed by default — dashboards and questions on basedb's bases, under
+# /insights at the same address: its published image (eodia/insights:INSIGHTS_VERSION) and
+# Trino as two more services, its catalog a database of its own on `db`. A new
+# insights: INSIGHTS_VERSION, then `docker compose up -d`. Without it: BASEDB_INSIGHTS=0 —
+# its services start no container, and basedb's interface hides its dashboards.
+#
 # Every variable is described in `.env.example`. An empty value counts as unset.
 
 name: basedb
 
 services:
+  # The five secrets, drawn on the first start into the `secrets` volume and kept there; a value
+  # set in .env wins, and is written there instead (an install of before keeps its own). basedb
+  # reads them as NAME_FILE, Postgres as POSTGRES_PASSWORD_FILE, insights and Trino at their
+  # start. BASEDB_ENCRYPTION_KEY is to be kept apart from the database's backups:
+  #   docker compose exec basedb cat /run/basedb-secrets/BASEDB_ENCRYPTION_KEY
+  # Run at every `up`, it changes nothing once they are drawn. (Postgres' image: already here.)
+  secrets:
+    image: postgres:16-alpine
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        cd /secrets
+        # NAME, its value in .env, and how many random bytes when neither .env nor the volume has it.
+        draw() {
+          if [ -n "$$2" ]; then printf %s "$$2" > "$$1.new"
+          elif [ -s "$$1" ]; then return 0
+          else head -c "$$3" /dev/urandom | od -An -tx1 | tr -d ' \n' > "$$1.new"; echo "secrets: $$1 drawn"
+          fi
+          chmod 444 "$$1.new"
+          mv -f "$$1.new" "$$1"
+        }
+        draw POSTGRES_PASSWORD "$$POSTGRES_PASSWORD" 24
+        draw BASEDB_ENCRYPTION_KEY "$$BASEDB_ENCRYPTION_KEY" 32
+        draw BASEDB_INSIGHTS_SECRET "$$BASEDB_INSIGHTS_SECRET" 32
+        draw INSIGHTS_OPA_SECRET "$$INSIGHTS_OPA_SECRET" 24
+        draw INSIGHTS_SECRET_KEY "$$INSIGHTS_SECRET_KEY" 32
+        # The addresses that carry the password.
+        password=$$(cat POSTGRES_PASSWORD)
+        draw DATABASE_URL "$${DATABASE_URL:-postgres://$$POSTGRES_USER:$$password@db:5432/$$POSTGRES_DB}"
+        draw INSIGHTS_DATABASE_URL "$${INSIGHTS_DATABASE_URL:-postgres://$$POSTGRES_USER:$$password@db:5432/insights}"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-basedb}
+      POSTGRES_DB: ${POSTGRES_DB:-basedb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      DATABASE_URL: ${DATABASE_URL:-}
+      BASEDB_ENCRYPTION_KEY: ${BASEDB_ENCRYPTION_KEY:-}
+      BASEDB_INSIGHTS_SECRET: ${BASEDB_INSIGHTS_SECRET:-}
+      INSIGHTS_OPA_SECRET: ${INSIGHTS_OPA_SECRET:-}
+      INSIGHTS_SECRET_KEY: ${INSIGHTS_SECRET_KEY:-}
+      INSIGHTS_DATABASE_URL: ${INSIGHTS_DATABASE_URL:-}
+    volumes:
+      - secrets:/secrets
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    depends_on:
+      secrets: { condition: service_completed_successfully }
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-basedb}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD_FILE: /run/basedb-secrets/POSTGRES_PASSWORD
       POSTGRES_DB: ${POSTGRES_DB:-basedb}
     volumes:
       - db-data:/var/lib/postgresql/data
+      - secrets:/run/basedb-secrets:ro
     # Published for psql and your SQL tools: basedb's tables are plain PostgreSQL tables.
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
@@ -36,7 +90,14 @@ services:
 
   basedb:
     image: eodia/basedb:${BASEDB_VERSION:-latest}
-    build: { context: . }
+    # `--build`: basedb alone, or with insights in the same container
+    # (BASEDB_BUILD_TARGET=basedb-insights, built on eodia/insights:INSIGHTS_VERSION, 0.7.0 or
+    # later): then BASEDB_INSIGHTS_HOST=basedb, and `docker compose up -d db basedb trino`.
+    build:
+      context: .
+      target: ${BASEDB_BUILD_TARGET:-basedb}
+      args:
+        INSIGHTS_VERSION: ${INSIGHTS_VERSION:-0.7.0}
     restart: unless-stopped
     init: true
     depends_on:
@@ -48,8 +109,9 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-basedb}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-basedb}}
-      BASEDB_ENCRYPTION_KEY: ${BASEDB_ENCRYPTION_KEY:?set BASEDB_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
+      # The secrets of the `secrets` service; a DATABASE_URL in .env still wins.
+      DATABASE_URL_FILE: /run/basedb-secrets/DATABASE_URL
+      BASEDB_ENCRYPTION_KEY_FILE: /run/basedb-secrets/BASEDB_ENCRYPTION_KEY
       BASEDB_TENANT: ${BASEDB_TENANT:-}
       # Applies the catalog on an empty database; the first administrator is created by
       # the first visit to the interface, or here when BASEDB_ADMIN_EMAIL names it.
@@ -102,11 +164,25 @@ services:
       BASEDB_DEMO: ${BASEDB_DEMO:-}
       BASEDB_DEMO_ACCOUNTS: ${BASEDB_DEMO_ACCOUNTS:-}
       BASEDB_DEMO_PASSWORD: ${BASEDB_DEMO_PASSWORD:-}
+      # insights, the service below, relayed under /insights: basedb signs its users in there
+      # with BASEDB_INSIGHTS_SECRET, the same on both sides. 1 by default; 0 leaves it out.
+      BASEDB_INSIGHTS: ${BASEDB_INSIGHTS:-1}
+      BASEDB_INSIGHTS_HOST: ${BASEDB_INSIGHTS_HOST:-insights}
+      # basedb's side, deduced from the host; set for an insights elsewhere.
+      BASEDB_INSIGHTS_URL: ${BASEDB_INSIGHTS_URL:-}
+      BASEDB_INSIGHTS_PUBLIC_URL: ${BASEDB_INSIGHTS_PUBLIC_URL:-}
+      BASEDB_INSIGHTS_SECRET_FILE: /run/basedb-secrets/BASEDB_INSIGHTS_SECRET
+      # insights' own, for the target basedb-insights only (insights in this container).
+      INSIGHTS_OPA_SECRET_FILE: /run/basedb-secrets/INSIGHTS_OPA_SECRET
+      INSIGHTS_SECRET_KEY_FILE: /run/basedb-secrets/INSIGHTS_SECRET_KEY
+      # basedb's database as Trino reaches it, without credentials: DATABASE_URL's otherwise.
+      BASEDB_INSIGHTS_DATABASE_URL: ${BASEDB_INSIGHTS_DATABASE_URL:-}
       # Development only.
       BASEDB_DEV_MAIL: ${BASEDB_DEV_MAIL:-}
       BASEDB_WEBHOOK_DEV: ${BASEDB_WEBHOOK_DEV:-}
     volumes:
       - files:/data
+      - secrets:/run/basedb-secrets:ro
     ports:
       - "127.0.0.1:${BASEDB_PORT:-3000}:3000"
 
@@ -126,8 +202,109 @@ services:
       - "443:443"
       - "443:443/udp"
 
+  # insights' catalog: a database of its own on basedb's server, created when missing.
+  # Its three services run one container, none with BASEDB_INSIGHTS=0 (0 or 1 only, here).
+  insights-db:
+    image: postgres:16-alpine
+    scale: ${BASEDB_INSIGHTS:-1}
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-basedb}
+      PGDATABASE: ${POSTGRES_DB:-basedb}
+    volumes:
+      - secrets:/run/basedb-secrets:ro
+    command:
+      - sh
+      - -c
+      - |
+        export PGPASSWORD="$$(cat /run/basedb-secrets/POSTGRES_PASSWORD)"
+        psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'insights'" | grep -q 1 || psql -c "CREATE DATABASE insights"
+
+  # insights, its published image (eodia/insights: its server — API, MCP, jobs — and its interface):
+  # basedb relays it under /insights — its interface is told that path — and signs its users
+  # in. INSIGHTS_VERSION picks the version. Any other of its variables: insights.env.
+  insights:
+    image: eodia/insights:${INSIGHTS_VERSION:-0.7.0}
+    scale: ${BASEDB_INSIGHTS:-1}
+    # Its secrets read from the `secrets` volume — insights takes no NAME_FILE — unless
+    # insights.env gives them; then its own entry point.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        s=/run/basedb-secrets
+        export DATABASE_URL="$${DATABASE_URL:-$$(cat $$s/INSIGHTS_DATABASE_URL)}"
+        export SECRET_KEY="$${SECRET_KEY:-$$(cat $$s/INSIGHTS_SECRET_KEY)}"
+        export OPA_SECRET="$${OPA_SECRET:-$$(cat $$s/INSIGHTS_OPA_SECRET)}"
+        export HOST_SSO_SECRET="$${HOST_SSO_SECRET:-$$(cat $$s/BASEDB_INSIGHTS_SECRET)}"
+        exec /app/docker/entrypoint.sh "$$@"
+      - insights
+    command: all
+    restart: unless-stopped
+    init: true
+    depends_on:
+      insights-db: { condition: service_completed_successfully }
+      trino: { condition: service_started }
+    env_file:
+      - path: insights.env
+        required: false
+    environment:
+      NODE_ENV: production
+      TRINO_URL: ${INSIGHTS_TRINO_URL:-http://trino:8080}
+      # Its address for the browser, and the path basedb relays it under.
+      PUBLIC_URL: ${BASEDB_INSIGHTS_PUBLIC_URL:-${BASEDB_PUBLIC_URL:-http://localhost:${BASEDB_PORT:-3000}}/insights}
+      INSIGHTS_BASE_PATH: ${BASEDB_BASE_PATH:-}/insights
+      # basedb, its host application: its users signed in by it, its bases read with its rights.
+      HOST_SSO_ISSUER: basedb
+      HOST_ACCESS_URL: http://basedb:3000/api/insights/reader
+      HOST_PUBLIC_URL: ${BASEDB_PUBLIC_URL:-http://localhost:${BASEDB_PORT:-3000}}
+      # Its assistant: basedb's AI unless INSIGHTS_AI_* say otherwise.
+      AI_PROVIDER: ${INSIGHTS_AI_PROVIDER:-${BASEDB_AI_PROVIDER:-}}
+      AI_MODEL: ${INSIGHTS_AI_MODEL:-${BASEDB_AI_MODEL:-}}
+      AI_API_KEY: ${INSIGHTS_AI_API_KEY:-${BASEDB_AI_API_KEY:-}}
+      AI_BASE_URL: ${INSIGHTS_AI_BASE_URL:-${BASEDB_AI_BASE_URL:-}}
+      AI_PROVIDER_SSL_VERIFY: ${INSIGHTS_AI_PROVIDER_SSL_VERIFY:-${BASEDB_AI_PROVIDER_SSL_VERIFY:-}}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SMTP_URL: ${INSIGHTS_SMTP_URL:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-}
+    volumes:
+      - secrets:/run/basedb-secrets:ro
+
+  # insights' query engine: the catalogs are insights' to add as it runs (CREATE CATALOG);
+  # who reads what, Trino asks insights' server (OPA). Configuration: docker/trino/etc,
+  # insights' own.
+  trino:
+    image: trinodb/trino:483
+    scale: ${BASEDB_INSIGHTS:-1}
+    restart: unless-stopped
+    # OPA_URL carries insights' OPA secret, read from the `secrets` volume.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export OPA_URL="http://${BASEDB_INSIGHTS_HOST:-insights}:4200/internal/opa/$$(cat /run/basedb-secrets/INSIGHTS_OPA_SECRET)"
+        exec /usr/lib/trino/bin/run-trino
+    environment:
+      CATALOG_MANAGEMENT: dynamic
+    volumes:
+      - secrets:/run/basedb-secrets:ro
+      - ./docker/trino/etc/config.properties:/etc/trino/config.properties:ro
+      - ./docker/trino/etc/access-control.properties:/etc/trino/access-control.properties:ro
+      - ./docker/trino/etc/jvm.config:/etc/trino/jvm.config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/v1/info"]
+      interval: 5s
+      retries: 60
+
 volumes:
   db-data:
   files:
+  secrets:
   caddy-data:
   caddy-config:

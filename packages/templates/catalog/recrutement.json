@@ -313,58 +313,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Recrutements",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Candidatures en cours",
-          "table": "candidats",
-          "aggregate": "count",
-          "filter": "[Étape] ne \"Embauché\" and [Étape] ne \"Refusé\""
-        },
-        {
-          "kind": "number",
-          "title": "Postes ouverts",
-          "table": "postes",
-          "aggregate": "count",
-          "filter": "[Ouvert] eq true"
-        },
-        {
-          "kind": "number",
-          "title": "Évaluation moyenne",
-          "table": "candidats",
-          "aggregate": "avg",
-          "field": "Évaluation"
-        },
-        {
-          "kind": "chart",
-          "title": "Par étape",
-          "table": "candidats",
-          "group_by": "Étape",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "chart",
-          "title": "Sources",
-          "table": "candidats",
-          "group_by": "Source",
-          "style": "pie"
-        },
-        {
-          "kind": "list",
-          "title": "Prochains entretiens",
-          "table": "entretiens",
-          "fields": ["Titre", "Date", "Type"],
-          "sort": "Date",
-          "limit": 5,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Nouvelle candidature",

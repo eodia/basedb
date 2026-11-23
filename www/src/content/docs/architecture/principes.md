@@ -27,10 +27,10 @@ ressource qu’on ne peut pas voir répond exactement comme une ressource qui n�
 
 ## Le noyau décide, les adaptateurs traduisent
 
-Un monorepo TypeScript : `@basedb/core` porte toute la logique (catalogue, moteur DDL,
-permissions, enregistrements, historique) ; `apps/api` (Hono), `apps/mcp` et `apps/web`
-(Next.js) sont des adaptateurs qui ne s’appellent pas entre eux. L’interface ne dépend jamais du
-noyau : elle parle HTTP, point.
+Le serveur, `basedb-server`, est écrit en Rust : un crate par domaine (catalogue, moteur DDL,
+permissions, enregistrements, historique, automatisations, IA), sous deux adaptateurs, l’API REST
+et le serveur MCP, qui ne s’appellent pas entre eux. L’interface (`apps/web`, Next.js, exportée en
+fichiers statiques) ne dépend jamais du noyau : elle parle HTTP, point.
 
 ## Rien ne se perd sans décision
 

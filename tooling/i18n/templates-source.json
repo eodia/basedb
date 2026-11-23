@@ -328,26 +328,6 @@
       "kind": "label",
       "where": "views[5].label"
     },
-    "Satisfaction": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "Avis à traiter": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Réponses urgentes": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Thèmes abordés": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Derniers avis négatifs": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
     "Alerte avis urgent": {
       "kind": "label",
       "where": "automations[0].label"
@@ -690,34 +670,6 @@
       "kind": "label",
       "where": "views[4].label"
     },
-    "Support": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "Questions en attente": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Articles publiés": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Votes « utile »": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Questions par catégorie": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Articles par niveau": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Questions récentes": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
     "Nouvelle question": {
       "kind": "label",
       "where": "automations[0].label"
@@ -741,6 +693,10 @@
     "Pour un service support. Les articles d'aide sont rangés par catégorie et suivis dans le temps ; les questions des clients arrivent par un formulaire public. L'IA résume chaque article et en évalue le niveau, classe chaque question et rédige un brouillon de réponse à relire.": {
       "kind": "text",
       "where": "description"
+    },
+    "Support": {
+      "kind": "label",
+      "where": "category"
     },
     "IA": {
       "kind": "tag",
@@ -1067,22 +1023,6 @@
     "Chronologie": {
       "kind": "label",
       "where": "views[4].label"
-    },
-    "À publier ce mois-ci": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Publiés": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Par statut": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Prochaines parutions": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
     },
     "Contenu publié": {
       "kind": "label",
@@ -1662,30 +1602,6 @@
       "kind": "label",
       "where": "views[5].label"
     },
-    "Ventes": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "En jeu": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Gagné": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Opportunités ouvertes": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Pipeline par étape": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Prochaines clôtures": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
     "Opportunité gagnée": {
       "kind": "label",
       "where": "automations[0].label"
@@ -1709,6 +1625,10 @@
     "Un CRM léger pour une équipe commerciale. Les opportunités avancent dans un pipeline, portent un montant pondéré par leur probabilité, et l'IA en évalue le risque et conseille la prochaine action à partir des notes. Les échanges avec les clients sont consignés et résumés, les entreprises cumulent ce qu'elles représentent.": {
       "kind": "text",
       "where": "description"
+    },
+    "Ventes": {
+      "kind": "label",
+      "where": "category"
     },
     "IA": {
       "kind": "tag",
@@ -2452,46 +2372,6 @@
       "kind": "label",
       "where": "views[10].label"
     },
-    "Pilotage de l'agence": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "L'essentiel en un coup d'œil.": {
-      "kind": "text",
-      "where": "dashboards[0].description"
-    },
-    "Projets en cours": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Encaissé (HT)": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Note moyenne des avis": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Tâches par statut": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Sentiment des avis": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Prochaines échéances": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
-    "Bienvenue": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[6].title"
-    },
-    "Cette base est une démonstration. Ouvrez « Avis clients » pour voir l'IA lire les avis, « Tâches » pour les vues kanban, calendrier et dépendances, et « Automatisations » pour ce qui se passe quand une tâche est terminée.": {
-      "kind": "text",
-      "where": "dashboards[0].blocks[6].body"
-    },
     "Tâche terminée": {
       "kind": "label",
       "where": "automations[0].label"
@@ -2918,22 +2798,6 @@
       "kind": "label",
       "where": "views[4].label"
     },
-    "Événements à venir": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Inscriptions par statut": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Sentiment des retours": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Prochains événements": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
     "Date d'inscription": {
       "kind": "label",
       "where": "automations[0].label"
@@ -3235,30 +3099,6 @@
     "Calendrier": {
       "kind": "label",
       "where": "views[5].label"
-    },
-    "Projets en cours": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Tâches bloquées": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Heures restantes": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Météo des projets": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Tâches par statut": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Échéances proches": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
     },
     "Tâche terminée": {
       "kind": "label",
@@ -3618,34 +3458,6 @@
       "kind": "label",
       "where": "views[4].label"
     },
-    "Stocks": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "Articles à commander": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Articles suivis": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Sorties ce mois-ci": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Articles par catégorie": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Mouvements par type": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Derniers mouvements": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
-    },
     "Grosse sortie": {
       "kind": "label",
       "where": "automations[0].label"
@@ -3689,6 +3501,10 @@
     "IA": {
       "kind": "tag",
       "where": "tags"
+    },
+    "Stocks": {
+      "kind": "label",
+      "where": "base.label"
     },
     "Les articles en stock, leurs fournisseurs et les entrées et sorties.": {
       "kind": "text",
@@ -4123,30 +3939,6 @@
     "Postes ouverts": {
       "kind": "label",
       "where": "views[4].label"
-    },
-    "Recrutements": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "Candidatures en cours": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Évaluation moyenne": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[2].title"
-    },
-    "Par étape": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Sources": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Prochains entretiens": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
     },
     "Nouvelle candidature": {
       "kind": "label",
@@ -4621,30 +4413,6 @@
     "Planning": {
       "kind": "label",
       "where": "views[5].label"
-    },
-    "Santé du produit": {
-      "kind": "label",
-      "where": "dashboards[0].label"
-    },
-    "Tickets ouverts": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[0].title"
-    },
-    "Critiques ouverts": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[1].title"
-    },
-    "Par catégorie": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[3].title"
-    },
-    "Par statut": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[4].title"
-    },
-    "Critiques à traiter": {
-      "kind": "label",
-      "where": "dashboards[0].blocks[5].title"
     },
     "Date de résolution": {
       "kind": "label",

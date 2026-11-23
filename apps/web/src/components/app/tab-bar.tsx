@@ -1,5 +1,17 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Eye, Plus, SquareTerminal, Table2, Workflow, X } from 'lucide-react'
+import { useEffect, useMemo } from 'react'
 import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
@@ -16,18 +28,6 @@ import type { BaseEnvironment, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Eye, Plus, SquareTerminal, Table2, Workflow, X } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
 
 /**
  * The tab strip.
@@ -204,10 +204,16 @@ function SortableTab({
             onClose()
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: the sortable attributes make it a focusable button */}
           <div
             {...attributes}
             {...listeners}
             onClick={onActivate}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              onActivate()
+            }}
             className="flex cursor-pointer items-center gap-1.5"
           >
             <LookIcon look={look ?? {}} fallback={Icon} className="size-3 opacity-70" />

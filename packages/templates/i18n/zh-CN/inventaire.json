@@ -74,13 +74,6 @@
   "Par catégorie": "按类别",
   "Journal": "流水",
   "Calendrier": "日历",
-  "Stocks": "库存",
-  "Articles à commander": "待采购物品",
-  "Articles suivis": "物品总数",
-  "Sorties ce mois-ci": "本月出库",
-  "Articles par catégorie": "物品类别分布",
-  "Mouvements par type": "出入库类型分布",
-  "Derniers mouvements": "最近出入库记录",
   "Grosse sortie": "大批量出库",
   "Prévient quand une sortie dépasse 50 unités.": "当出库数量超过 50 件时发出提醒。",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "大批量出库：{{Libellé}}（{{Quantité}}）",
@@ -92,5 +85,6 @@
   "Formules": "公式",
   "Galerie": "画廊",
   "IA": "AI",
+  "Stocks": "库存",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "在库物品、供应商，以及入库和出库记录。"
 }

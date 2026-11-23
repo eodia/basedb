@@ -1,14 +1,14 @@
 'use client'
 
+import { Share2 } from 'lucide-react'
 import type { Upload } from '@/components/app/files'
 import { FormFill } from '@/components/app/forms/form-fill'
 import type { SearchLink } from '@/components/app/pickers'
 import { Unavailable } from '@/components/app/views/kanban-view'
 import { Button } from '@/components/ui/button'
-import { type Field, type LinkOption, type Table, api } from '@/lib/api/client'
+import { api, type Field, type LinkOption, type Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import type { FormSpec } from '@/lib/views'
-import { Share2 } from 'lucide-react'
 
 /**
  * The form, the survey and the quiz — a row asked for, rather than shown (ch. 11 §1.4). The screen

@@ -1,33 +1,33 @@
 'use client'
 
+import {
+  type BuilderQuery,
+  type ColumnRef,
+  columnName,
+  JOIN_KINDS,
+  type Join,
+  type JoinKind,
+} from '@basedb/contracts'
+import { ChevronDown, Table2 } from 'lucide-react'
+import { useState } from 'react'
 import { JOIN_PICTOGRAMS, JoinGlyph } from '@/components/app/analytics/join-glyph'
 import { TableList } from '@/components/app/analytics/table-picker'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Segmented } from '@/components/ui/segmented'
 import {
+  columnsOf,
   JOIN_LABELS,
   JOIN_SHORT,
-  columnsOf,
   joinAlias,
+  joinable,
   joinSentence,
   joinSuggestions,
-  joinable,
   suggestedCondition,
   tableOf,
 } from '@/lib/analytics/model'
 import type { DescribedBase, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import {
-  type BuilderQuery,
-  type ColumnRef,
-  JOIN_KINDS,
-  type Join,
-  type JoinKind,
-  columnName,
-} from '@basedb/contracts'
-import { ChevronDown, Table2 } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * A join the person writes (chapter 18 §3): the table, how rows meet — left, inner, right,

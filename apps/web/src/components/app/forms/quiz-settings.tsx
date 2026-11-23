@@ -1,13 +1,5 @@
 'use client'
 
-import { Choice } from '@/components/ui/choice'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import type { Field } from '@/lib/api/client'
-import { editText, parseNumberInput } from '@/lib/format'
-import { $t, $tp } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import { type FormQuestion, isGraded } from '@/lib/views'
 import {
   QUIZ_KINDS,
   QUIZ_MAX_ACCEPTED,
@@ -18,6 +10,14 @@ import {
 } from '@basedb/contracts'
 import { Check, Eye, EyeOff, ListChecks, Trophy } from 'lucide-react'
 import { useId, useState } from 'react'
+import { Choice } from '@/components/ui/choice'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import type { Field } from '@/lib/api/client'
+import { editText, parseNumberInput } from '@/lib/format'
+import { $t, $tp } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import { type FormQuestion, isGraded } from '@/lib/views'
 
 /**
  * A quiz's editor (views/view-dialog.tsx): under each question, its right answer and what
@@ -310,10 +310,10 @@ export function GradingSettings({
             const on = reveal === r.value
             const Icon = r.icon
             return (
+              // biome-ignore lint/a11y/useSemanticElements: cards that say what they choose, the ARIA radio pattern
               <button
                 key={r.value}
                 type="button"
-                // biome-ignore lint/a11y/useSemanticElements: cards that say what they choose, the ARIA radio pattern
                 role="radio"
                 aria-checked={on}
                 onClick={() => onChange('reveal', r.value)}

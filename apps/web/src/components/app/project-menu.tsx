@@ -1,9 +1,21 @@
 'use client'
 
+import {
+  Check,
+  ChevronsUpDown,
+  FolderKanban,
+  History,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  UserPlus,
+} from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { PurgeDialog, type PurgeTarget } from '@/components/app/lifecycle-dialogs'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
-import { LookIcon, hasLook } from '@/components/app/option-badge'
+import { hasLook, LookIcon } from '@/components/app/option-badge'
 import { ShareAccessDialog } from '@/components/app/share-access-dialog'
 import { BrandIcon } from '@/components/brand'
 import { Button } from '@/components/ui/button'
@@ -29,22 +41,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type DeletedBase, type Project, api } from '@/lib/api/client'
+import { api, type DeletedBase, type Project } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  Check,
-  ChevronsUpDown,
-  FolderKanban,
-  History,
-  Loader2,
-  Pencil,
-  Plus,
-  Trash2,
-  UserPlus,
-} from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The project switcher, top of the sidebar — chapter 05 §15.
@@ -184,18 +184,25 @@ export function ProjectMenu({
           trigger
         )}
 
-        <DropdownMenuContent side={compact ? 'right' : 'bottom'} align="start" className="w-64">
+        <DropdownMenuContent
+          side={compact ? 'right' : 'bottom'}
+          align="start"
+          className="flex max-h-(--radix-dropdown-menu-content-available-height) w-64 flex-col"
+        >
           <DropdownMenuLabel>{$t('Projets')}</DropdownMenuLabel>
           {projects.length === 0 && (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">{$t('Aucun projet.')}</div>
           )}
-          {projects.map((p) => (
-            <DropdownMenuItem key={p.id} onSelect={() => onSelect(p.id)}>
-              <LookIcon look={p} fallback={FolderKanban} />
-              <span className="min-w-0 flex-1 truncate">{p.label}</span>
-              {project?.id === p.id && <Check className="size-4 text-primary" />}
-            </DropdownMenuItem>
-          ))}
+          {/* However many projects, the list scrolls and the actions below stay in view. */}
+          <div className="-mx-1.5 max-h-[min(50vh,24rem)] min-h-0 shrink overflow-y-auto px-1.5 scroll-discret">
+            {projects.map((p) => (
+              <DropdownMenuItem key={p.id} onSelect={() => onSelect(p.id)}>
+                <LookIcon look={p} fallback={FolderKanban} />
+                <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                {project?.id === p.id && <Check className="size-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </div>
 
           <DropdownMenuSeparator />
 

@@ -1472,6 +1472,8 @@ export function draftOf(automation: Automation, base: DescribedBase): Draft {
           return { id: idOf(a.id), kind: a.kind, paths: pathsOf(a.paths, false) }
         case 'attempt':
           return { id: idOf(a.id), kind: a.kind, paths: pathsOf(a.paths, true) }
+        default:
+          return a satisfies never
       }
     })
   const date = automation.trigger.date

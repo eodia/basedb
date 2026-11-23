@@ -1,8 +1,8 @@
 'use client'
 
-import type { Field, Table } from '@/lib/api/client'
 import type { QuestionQuery, Visualization } from '@basedb/contracts'
 import { create } from 'zustand'
+import type { Field, Table } from '@/lib/api/client'
 
 /**
  * The workspace — tabs, and the view state each one carries.
@@ -82,7 +82,7 @@ export interface ViewState {
   readonly filter: string
   readonly pageSize: number
   readonly cursors: readonly string[]
-  /** Result of the "Compter" button — absent until someone asks (§1.1). */
+  /** The total of the rows the filter keeps, counted beside the page — null until it lands (§1.1). */
   readonly total: number | null
   readonly totalCapped: boolean
   /**

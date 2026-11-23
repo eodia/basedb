@@ -2055,12 +2055,6 @@ export default {
 		download: 'Descărcați JSON-ul',
 		downloadNote: 'Pentru a-l importa în instanța dumneavoastră sau pentru a-l adapta înainte de a-l propune pentru catalog.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Tablou de bord</strong> „{label}” — {blocks}',
-		blocks: {
-			one: '{n} bloc',
-			few: '{n} blocuri',
-			other: '{n} de blocuri',
-		},
 		automation: '<strong>Automatizare</strong> „{label}”',
 		yes: 'Da',
 		no: 'Nu',

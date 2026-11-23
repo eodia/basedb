@@ -1,25 +1,6 @@
 'use client'
 
-import { Reads } from '@/components/app/copilot-panel'
-import { ResizablePanel } from '@/components/app/resizable-panel'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
-import { Hint } from '@/components/ui/tooltip'
 import {
-  type AutomationCopilotAction,
-  type AutomationCopilotAnswer,
-  type AutomationDefinition,
-  type AutomationInput,
-  type CopilotMessage,
-  type DescribedBase,
-  api,
-} from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
-import { cn } from '@/lib/utils'
-import {
-  ArrowUp,
   Check,
   Loader2,
   Minus,
@@ -33,6 +14,32 @@ import {
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AiStar } from '@/components/app/ai-star'
+import {
+  type Attachment,
+  AttachmentChips,
+  attachmentsToSend,
+  CopilotComposer,
+  questionFor,
+  useAttachments,
+} from '@/components/app/copilot-attachments'
+import { Reads } from '@/components/app/copilot-panel'
+import { ResizablePanel } from '@/components/app/resizable-panel'
+import { Button } from '@/components/ui/button'
+import { Hint } from '@/components/ui/tooltip'
+import {
+  type AutomationCopilotAction,
+  type AutomationCopilotAnswer,
+  type AutomationDefinition,
+  type AutomationInput,
+  api,
+  type CopilotMessage,
+  type DescribedBase,
+} from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
+import { speakReply } from '@/lib/voice'
 
 /**
  * The copilot of the automations — chapter 17 §6, on screen.
@@ -76,6 +83,7 @@ type CardState =
 interface Turn {
   readonly id: number
   readonly question: string
+  readonly attachments?: readonly Attachment[]
   readonly answer: AutomationCopilotAnswer | null
   readonly error: string | null
   readonly cards: readonly CardState[]
@@ -112,6 +120,7 @@ export function AutomationCopilot({
   const [busy, setBusy] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement>(null)
+  const attachments = useAttachments()
 
   useEffect(() => {
     setConversation(conversations.get(base.name) ?? EMPTY)
@@ -137,8 +146,10 @@ export function AutomationCopilot({
   }, [turnCount, lastAnswered])
 
   const send = async (text: string) => {
-    const question = text.trim()
-    if (question === '' || busy) return
+    if (busy) return
+    const attached = attachments.take()
+    const question = questionFor(text, attached)
+    if (question === '') return
     const id = Math.max(++sequence, ...conversation.turns.map((t) => t.id + 1))
     sequence = id
     const history: CopilotMessage[] = conversation.turns.flatMap((t) => [
@@ -147,7 +158,10 @@ export function AutomationCopilot({
     ])
     update((c) => ({
       ...c,
-      turns: [...c.turns, { id, question, answer: null, error: null, cards: [] }],
+      turns: [
+        ...c.turns,
+        { id, question, attachments: attached, answer: null, error: null, cards: [] },
+      ],
     }))
     setPrompt('')
     setBusy(true)
@@ -157,6 +171,7 @@ export function AutomationCopilot({
         automation: current?.id ?? null,
         draft: current?.input ?? null,
         messages: [...history, { role: 'user', content: question }],
+        attachments: attachmentsToSend([...conversation.turns.map((t) => t.attachments), attached]),
         readData: conversation.readData,
       })
       update((c) => ({
@@ -167,6 +182,7 @@ export function AutomationCopilot({
             : t,
         ),
       }))
+      speakReply(answer.message)
     } catch (e) {
       update((c) => ({
         ...c,
@@ -245,7 +261,7 @@ export function AutomationCopilot({
   return (
     <ResizablePanel panel="copilot" label={$t('le Copilot')} className="bg-sidebar">
       <header className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-        <Sparkles className="size-4 text-primary" />
+        <AiStar size={16} />
         <span className="flex-1 truncate text-sm font-medium">
           {$t('Copilot')}{' '}
           <span className="font-normal text-muted-foreground">
@@ -310,8 +326,11 @@ export function AutomationCopilot({
 
         {conversation.turns.map((turn) => (
           <div key={turn.id} className="space-y-2">
-            <div className="ml-8 whitespace-pre-line rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">
-              {turn.question}
+            <div className="ml-8 space-y-2 rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">
+              {turn.attachments !== undefined && (
+                <AttachmentChips attachments={turn.attachments} tone="onPrimary" />
+              )}
+              <p className="whitespace-pre-line">{turn.question}</p>
             </div>
 
             {turn.answer === null && turn.error === null && (
@@ -362,24 +381,6 @@ export function AutomationCopilot({
       </div>
 
       <div className="shrink-0 space-y-2 border-t p-3">
-        <div className="flex items-start gap-2 text-xs">
-          <Checkbox
-            id="automation-copilot-read"
-            checked={conversation.readData}
-            onCheckedChange={(next) => update((c) => ({ ...c, readData: next === true }))}
-            disabled={busy}
-            className="mt-px"
-          />
-          <label
-            htmlFor="automation-copilot-read"
-            className="cursor-pointer leading-snug text-muted-foreground"
-          >
-            <span className="text-foreground">{$t('Autoriser la lecture des données')}</span>{' '}
-            {$t(
-              'pour cette conversation : le Copilot peut lire les lignes que vous voyez (50 au plus par lecture) et les envoyer au fournisseur d’IA.',
-            )}
-          </label>
-        </div>
         {!conversation.readData && (
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Shield className="size-3" />
@@ -388,32 +389,27 @@ export function AutomationCopilot({
             )}
           </p>
         )}
-        <div className="relative">
-          <Textarea
-            ref={input}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void send(prompt)
-              }
-            }}
-            rows={3}
-            placeholder={$t('Quand une facture est payée, clos le projet et préviens le client…')}
-            aria-label={$t('Votre demande au Copilot')}
-            className="resize-none pr-11 text-sm"
-          />
-          <Button
-            size="icon-sm"
-            className="absolute right-2 bottom-2"
-            onClick={() => void send(prompt)}
-            disabled={busy || prompt.trim() === ''}
-            aria-label={$t('Envoyer')}
-          >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
-          </Button>
-        </div>
+        <CopilotComposer
+          value={prompt}
+          onChange={setPrompt}
+          onSend={() => void send(prompt)}
+          onDictated={(text) => void send(text)}
+          busy={busy}
+          inputRef={input}
+          attachments={attachments}
+          access={{
+            allowed: conversation.readData,
+            onChange: (readData) => update((c) => ({ ...c, readData })),
+            hint: conversation.readData
+              ? $t(
+                  'Le Copilot peut lire, pour cette conversation, des lignes que vous voyez (50 au plus par lecture) et les envoyer au fournisseur d’IA.',
+                )
+              : $t(
+                  'Autoriser le Copilot à lire, pour cette conversation, des lignes que vous voyez (50 au plus par lecture) et à les envoyer au fournisseur d’IA.',
+                ),
+          }}
+          placeholder={$t('Quand une facture est payée, clos le projet et préviens le client…')}
+        />
       </div>
     </ResizablePanel>
   )

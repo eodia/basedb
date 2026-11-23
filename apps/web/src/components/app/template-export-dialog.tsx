@@ -1,5 +1,9 @@
 'use client'
 
+import { optionValue } from '@basedb/contracts'
+import { Check, Copy, Download, Loader2, Server } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -12,15 +16,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type Me, api } from '@/lib/api/client'
+import { api, type Me } from '@/lib/api/client'
 import { copy, download } from '@/lib/export'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { type ExportResult, exportTemplate } from '@/lib/template-export'
-import { optionValue } from '@basedb/contracts'
-import { Check, Copy, Download, Loader2, Server } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * « Enregistrer comme modèle » — chapter 20 §6: a base as a template, from what the person

@@ -1,5 +1,22 @@
 'use client'
 
+import {
+  ArrowDown,
+  ArrowUp,
+  Ellipsis,
+  LifeBuoy,
+  Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Play,
+  Plus,
+  Sparkles,
+  Split,
+  Trash2,
+  X,
+  Zap,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AutomationCopilot, type FlowBridge } from '@/components/app/automation-copilot'
 import { FlowCanvas, STEP_ICONS } from '@/components/app/automation-flow'
 import { StepPicker } from '@/components/app/automation-picker'
@@ -21,17 +38,13 @@ import {
   ApiError,
   type Automation,
   type AutomationRun,
-  type DescribedBase,
   api,
+  type DescribedBase,
 } from '@/lib/api/client'
 import { type Slot, TRIGGER_NODE } from '@/lib/automation-layout'
 import {
   type Draft,
   type DraftStep,
-  STEP_LABELS,
-  type StepKind,
-  TRIGGER_LABELS,
-  TRIGGER_OF_RUN,
   draftOf,
   draftOfDefinition,
   emptyDraft,
@@ -50,6 +63,10 @@ import {
   runSentence,
   runStepSentence,
   runStepsById,
+  STEP_LABELS,
+  type StepKind,
+  TRIGGER_LABELS,
+  TRIGGER_OF_RUN,
 } from '@/lib/automations'
 import { relativeTime } from '@/lib/collab'
 import { $t } from '@/lib/i18n'
@@ -57,23 +74,6 @@ import { MembersProvider, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  ArrowDown,
-  ArrowUp,
-  Ellipsis,
-  LifeBuoy,
-  Loader2,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Play,
-  Plus,
-  Sparkles,
-  Split,
-  Trash2,
-  X,
-  Zap,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The automations of a base — chapter 17, on screen: the list with each one's switch and

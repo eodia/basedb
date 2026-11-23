@@ -1,16 +1,16 @@
 'use client'
 
+import { Check, Monitor, Moon, Sun } from 'lucide-react'
+import { useState } from 'react'
 import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
 import { Choice } from '@/components/ui/choice'
-import { type Me, api } from '@/lib/api/client'
+import { api, type Me } from '@/lib/api/client'
 import { dayOfDate, formatDay } from '@/lib/dates'
-import { $t, LOCALES, LOCALE_NAMES, type Locale, browserLocale } from '@/lib/i18n'
+import { $t, browserLocale, LOCALE_NAMES, LOCALES, type Locale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import type { DateFormat, WeekStart } from '@/lib/preferences'
 import { type ThemePreference, useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import { Check, Monitor, Moon, Sun } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * The language of the product, how it looks and how dates read — chapter 11 §10.
@@ -157,10 +157,10 @@ function Choices<T extends string | number>({
         const chosen = option.value === value
         const Icon = option.icon
         return (
+          // biome-ignore lint/a11y/useSemanticElements: a tile holds an icon, a label and a hint, which an <input type="radio"> cannot lay out
           <button
             key={String(option.value)}
             type="button"
-            // biome-ignore lint/a11y/useSemanticElements: a tile holds an icon, a label and a hint, which an <input type="radio"> cannot lay out
             role="radio"
             aria-checked={chosen}
             onClick={() => onChange(option.value)}

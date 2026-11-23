@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Combobox } from '@/components/ui/combobox'
 import {
   Select,
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/select'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { ReactNode } from 'react'
 
 /**
  * Choosing one value among options — the one field the interface uses for it.

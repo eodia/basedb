@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ImportError,
   chunk,
   convert,
   detectDelimiter,
+  ImportError,
   inferKind,
   labelFromFileName,
   matchColumns,

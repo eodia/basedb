@@ -41,7 +41,7 @@ claude mcp add --transport http --scope project basedb "http://localhost:3000/mc
 `--token-env`로 지정한 변수에서 토큰을 읽습니다:
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

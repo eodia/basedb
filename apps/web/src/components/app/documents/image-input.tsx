@@ -1,12 +1,12 @@
 'use client'
 
+import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import type { DocumentImageSource, Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
 import { Segmented } from './controls'
 import { MAX_IMAGE_BYTES } from './model'
 

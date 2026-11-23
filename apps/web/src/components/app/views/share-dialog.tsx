@@ -1,5 +1,18 @@
 'use client'
 
+import {
+  AlertTriangle,
+  CalendarDays,
+  Check,
+  Code2,
+  Copy,
+  ExternalLink,
+  Globe,
+  Loader2,
+  RefreshCw,
+  Users,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -15,32 +28,19 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Hint } from '@/components/ui/tooltip'
 import {
+  api,
+  calendarFeedUrl,
   type FormSharing,
   type ShareAccess,
   type ShareState,
+  sharedViewApiUrl,
   type TableRef,
   type ViewKind,
-  api,
-  calendarFeedUrl,
-  sharedViewApiUrl,
 } from '@/lib/api/client'
 import { linkTo } from '@/lib/base-path'
 import { $t, $tp, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  AlertTriangle,
-  CalendarDays,
-  Check,
-  Code2,
-  Copy,
-  ExternalLink,
-  Globe,
-  Loader2,
-  RefreshCw,
-  Users,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
 
 /**
  * Sharing a view — chapter 15, on screen.

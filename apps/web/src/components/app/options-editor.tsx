@@ -1,5 +1,7 @@
 'use client'
 
+import { Check, ChevronDown, ChevronUp, Copy, Lock, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LookButton } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,15 +10,13 @@ import { Hint } from '@/components/ui/tooltip'
 import { copy } from '@/lib/export'
 import { $t } from '@/lib/i18n'
 import {
-  type OptionDraft,
   emptyDraft,
+  type OptionDraft,
   parseOptionsJson,
   serializeOptions,
   valuesOf,
 } from '@/lib/options'
 import { cn } from '@/lib/utils'
-import { Check, ChevronDown, ChevronUp, Copy, Lock, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 /**
  * The editor of a list of choices: one row per choice, and the same list as JSON below.

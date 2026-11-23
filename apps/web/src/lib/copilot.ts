@@ -1,11 +1,11 @@
 import {
+  api,
   type CopilotField,
   type DescribedBase,
   type Field,
   type FieldOptionInput,
   type Table,
   type TableRef,
-  api,
 } from '@/lib/api/client'
 import { slugify } from '@/lib/options'
 import { localTimezone } from '@/lib/schedule'

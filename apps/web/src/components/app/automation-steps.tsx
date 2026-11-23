@@ -1,5 +1,23 @@
 'use client'
 
+import {
+  ArrowDown,
+  ArrowUp,
+  Braces,
+  Check,
+  Copy,
+  Loader2,
+  Lock,
+  LockOpen,
+  Paperclip,
+  Plus,
+  RefreshCw,
+  Split,
+  Trash2,
+  TriangleAlert,
+  X,
+} from 'lucide-react'
+import { type ChangeEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/components/app/admin/users-tab'
 import { TRIGGER_ICONS, TRIGGER_TONE } from '@/components/app/automation-flow'
 import { TriggerPicker } from '@/components/app/automation-picker'
@@ -24,17 +42,22 @@ import {
   type AutomationHttpMethod,
   type AutomationValueOp,
   type AutomationWaitUnit,
+  api,
   type DescribedBase,
   type DocumentTemplate,
   type Field,
+  hookUrl,
   type Integration,
   type Member,
-  api,
-  hookUrl,
 } from '@/lib/api/client'
 import {
   AI_ANSWERS,
+  attachmentKey,
+  blankPath,
   type CiteGroup,
+  changeableRows,
+  citeGroups,
+  comparesWith,
   type Draft,
   type DraftAttachment,
   type DraftBody,
@@ -42,7 +65,13 @@ import {
   type DraftMeasure,
   type DraftPath,
   type DraftStep,
+  filterIssue,
+  findPath,
+  freshId,
   HTTP_METHODS,
+  hasBody,
+  jsonBodyIssue,
+  loopsAround,
   MAX_ATTACHMENTS,
   MAX_CC,
   MAX_LOOP_ROWS,
@@ -52,57 +81,28 @@ import {
   MAX_RETRIES,
   MAX_WAIT_DAYS,
   MEASURE_FNS,
-  type RowChoice,
-  TRIGGER_HINTS,
-  TRIGGER_LABELS,
-  TRIGGER_ROW,
-  VALUE_OPS,
-  type ValueRow,
-  attachmentKey,
-  blankPath,
-  changeableRows,
-  citeGroups,
-  comparesWith,
-  filterIssue,
-  findPath,
-  freshId,
-  hasBody,
-  jsonBodyIssue,
-  loopsAround,
   measurableFields,
   notFoundBranch,
   offsetText,
   pathProblem,
   pathSummary,
+  type RowChoice,
   rowChoices,
   rowTableOf,
   stepCaption,
   stepsBefore,
+  TRIGGER_HINTS,
+  TRIGGER_LABELS,
+  TRIGGER_ROW,
   triggerHasTable,
   triggerProblem,
+  VALUE_OPS,
+  type ValueRow,
   writableFields,
 } from '@/lib/automations'
 import { copy } from '@/lib/export'
 import { $t, $tp, intlLocale, weekdayNames } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import {
-  ArrowDown,
-  ArrowUp,
-  Braces,
-  Check,
-  Copy,
-  Loader2,
-  Lock,
-  LockOpen,
-  Paperclip,
-  Plus,
-  RefreshCw,
-  Split,
-  Trash2,
-  TriangleAlert,
-  X,
-} from 'lucide-react'
-import { type ChangeEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The settings of what is chosen on the flow — chapter 17, one piece at a time: the
@@ -164,10 +164,10 @@ function Segmented<T extends string>({
       className="flex w-full rounded-md border bg-muted/40 p-0.5"
     >
       {options.map((o) => (
+        // biome-ignore lint/a11y/useSemanticElements: a segmented control, the ARIA radio pattern
         <button
           key={o.value}
           type="button"
-          // biome-ignore lint/a11y/useSemanticElements: a segmented control, the ARIA radio pattern
           role="radio"
           aria-checked={o.value === value}
           onClick={() => onChange(o.value)}
@@ -434,6 +434,7 @@ function ValueRows({
   return (
     <div className="space-y-2">
       {rows.map((row, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity but their place
         <div key={`${index}:${row.field}`} className="space-y-1 rounded-md border p-2">
           <div className="flex items-center gap-1.5">
             <FieldSelect
@@ -2520,6 +2521,7 @@ function RichMessage({
     [groups],
   )
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: only listens for a user edit bubbling up from the editor inside
     <div onPointerDown={touch} onKeyDown={touch} onPaste={touch} onDrop={touch}>
       <RichTextEditor
         value={value}

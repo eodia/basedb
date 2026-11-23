@@ -1,0 +1,342 @@
+{
+ "fr": {
+  "sentence": {
+   "mention": "{who} vous a mentionné dans {label}",
+   "reply": "{who} a répondu dans {label}",
+   "assigned": "{who} vous a désigné dans {label}",
+   "automation": "{who} vous prévient par une automatisation dans {label}"
+  },
+  "someone": "Quelqu’un",
+  "several_one": "1 notifications non lues dans basedb",
+  "several": "{count} notifications non lues dans basedb",
+  "greeting": "Bonjour {name},",
+  "open": "Ouvrir dans basedb",
+  "more_one": "Et une autre, dans basedb.",
+  "more": "Et {count} autres, dans basedb.",
+  "why": "Ce courriel part quand une notification reste dix minutes sans être lue.",
+  "settings": "Pour choisir ce que vous recevez par courriel : Paramètres › Notifications."
+ },
+ "en": {
+  "sentence": {
+   "mention": "{who} mentioned you in {label}",
+   "reply": "{who} replied in {label}",
+   "assigned": "{who} assigned you in {label}",
+   "automation": "{who} notified you through an automation in {label}"
+  },
+  "someone": "Someone",
+  "several_one": "1 unread notifications in basedb",
+  "several": "{count} unread notifications in basedb",
+  "greeting": "Hello {name},",
+  "open": "Open in basedb",
+  "more_one": "And one more, in basedb.",
+  "more": "And {count} more, in basedb.",
+  "why": "This email is sent when a notification stays unread for ten minutes.",
+  "settings": "To choose what you receive by email: Settings › Notifications."
+ },
+ "de": {
+  "sentence": {
+   "mention": "{who} hat Sie in {label} erwähnt",
+   "reply": "{who} hat in {label} geantwortet",
+   "assigned": "{who} hat Sie in {label} zugewiesen",
+   "automation": "{who} benachrichtigt Sie über eine Automatisierung in {label}"
+  },
+  "someone": "Jemand",
+  "several_one": "1 ungelesene Benachrichtigungen in basedb",
+  "several": "{count} ungelesene Benachrichtigungen in basedb",
+  "greeting": "Hallo {name},",
+  "open": "In basedb öffnen",
+  "more_one": "Und noch eine, in basedb.",
+  "more": "Und noch {count} weitere, in basedb.",
+  "why": "Diese E-Mail wird versendet, wenn eine Benachrichtigung zehn Minuten ungelesen bleibt.",
+  "settings": "Um zu wählen, was Sie per E-Mail erhalten: Einstellungen › Benachrichtigungen."
+ },
+ "es": {
+  "sentence": {
+   "mention": "{who} te mencionó en {label}",
+   "reply": "{who} respondió en {label}",
+   "assigned": "{who} te asignó en {label}",
+   "automation": "{who} te avisa mediante una automatización en {label}"
+  },
+  "someone": "Alguien",
+  "several_one": "1 notificaciones sin leer en basedb",
+  "several": "{count} notificaciones sin leer en basedb",
+  "greeting": "Hola {name},",
+  "open": "Abrir en basedb",
+  "more_one": "Y una más, en basedb.",
+  "more": "Y {count} más, en basedb.",
+  "why": "Este correo se envía cuando una notificación permanece sin leer durante diez minutos.",
+  "settings": "Para elegir lo que recibes por correo: Configuración › Notificaciones."
+ },
+ "it": {
+  "sentence": {
+   "mention": "{who} ti ha menzionato in {label}",
+   "reply": "{who} ha risposto in {label}",
+   "assigned": "{who} ti ha assegnato in {label}",
+   "automation": "{who} ti avvisa tramite un’automazione in {label}"
+  },
+  "someone": "Qualcuno",
+  "several_one": "1 notifiche non lette in basedb",
+  "several": "{count} notifiche non lette in basedb",
+  "greeting": "Ciao {name},",
+  "open": "Apri in basedb",
+  "more_one": "E un’altra, in basedb.",
+  "more": "E altre {count}, in basedb.",
+  "why": "Questa e-mail viene inviata quando una notifica resta da leggere per dieci minuti.",
+  "settings": "Per scegliere cosa ricevi per e-mail: Impostazioni › Notifiche."
+ },
+ "pt-BR": {
+  "sentence": {
+   "mention": "{who} mencionou você em {label}",
+   "reply": "{who} respondeu em {label}",
+   "assigned": "{who} atribuiu você em {label}",
+   "automation": "{who} notificou você por uma automação em {label}"
+  },
+  "someone": "Alguém",
+  "several_one": "1 notificações não lidas em basedb",
+  "several": "{count} notificações não lidas em basedb",
+  "greeting": "Olá {name},",
+  "open": "Abrir em basedb",
+  "more_one": "E mais uma, em basedb.",
+  "more": "E mais {count}, em basedb.",
+  "why": "Este e-mail é enviado quando uma notificação permanece sem leitura por dez minutos.",
+  "settings": "Para escolher o que você recebe por e-mail: Configurações › Notificações."
+ },
+ "nl": {
+  "sentence": {
+   "mention": "{who} heeft je vermeld in {label}",
+   "reply": "{who} heeft gereageerd in {label}",
+   "assigned": "{who} heeft je toegewezen in {label}",
+   "automation": "{who} brengt je via een automatisering op de hoogte in {label}"
+  },
+  "someone": "Iemand",
+  "several_one": "1 ongelezen meldingen in basedb",
+  "several": "{count} ongelezen meldingen in basedb",
+  "greeting": "Hallo {name},",
+  "open": "Openen in basedb",
+  "more_one": "En nog een, in basedb.",
+  "more": "En nog {count} meer, in basedb.",
+  "why": "Deze e-mail wordt verstuurd wanneer een melding tien minuten ongelezen blijft.",
+  "settings": "Om te kiezen wat je per e-mail ontvangt: Instellingen › Meldingen."
+ },
+ "pl": {
+  "sentence": {
+   "mention": "{who} wspomniał(a) o tobie w {label}",
+   "reply": "{who} odpowiedział(a) w {label}",
+   "assigned": "{who} przypisał(a) cię w {label}",
+   "automation": "{who} powiadamia cię przez automatyzację w {label}"
+  },
+  "someone": "Ktoś",
+  "several_one": "1 nieprzeczytane powiadomienie w basedb",
+  "several": "{count} nieprzeczytanych powiadomień w basedb",
+  "greeting": "Cześć {name},",
+  "open": "Otwórz w basedb",
+  "more_one": "I jeszcze jedno, w basedb.",
+  "more": "I jeszcze {count} innych, w basedb.",
+  "why": "Ten e-mail jest wysyłany, gdy powiadomienie pozostaje nieprzeczytane przez dziesięć minut.",
+  "settings": "Aby wybrać, co otrzymujesz e-mailem: Ustawienia › Powiadomienia."
+ },
+ "cs": {
+  "sentence": {
+   "mention": "{who} vás zmínil(a) v {label}",
+   "reply": "{who} odpověděl(a) v {label}",
+   "assigned": "{who} vás přiřadil(a) v {label}",
+   "automation": "{who} vás upozorňuje automatizací v {label}"
+  },
+  "someone": "Někdo",
+  "several_one": "1 nepřečtené oznámení v basedb",
+  "several": "{count} nepřečtených oznámení v basedb",
+  "greeting": "Dobrý den, {name},",
+  "open": "Otevřít v basedb",
+  "more_one": "A ještě jedno, v basedb.",
+  "more": "A ještě {count} dalších, v basedb.",
+  "why": "Tento e-mail se odesílá, když oznámení zůstane deset minut nepřečtené.",
+  "settings": "Pro výběr toho, co dostáváte e-mailem: Nastavení › Oznámení."
+ },
+ "sv": {
+  "sentence": {
+   "mention": "{who} nämnde dig i {label}",
+   "reply": "{who} svarade i {label}",
+   "assigned": "{who} tilldelade dig i {label}",
+   "automation": "{who} aviserar dig via en automatisering i {label}"
+  },
+  "someone": "Någon",
+  "several_one": "1 olästa aviseringar i basedb",
+  "several": "{count} olästa aviseringar i basedb",
+  "greeting": "Hej {name},",
+  "open": "Öppna i basedb",
+  "more_one": "Och en till, i basedb.",
+  "more": "Och {count} till, i basedb.",
+  "why": "Det här e-postmeddelandet skickas när en avisering är oläst i tio minuter.",
+  "settings": "För att välja vad du får via e-post: Inställningar › Aviseringar."
+ },
+ "da": {
+  "sentence": {
+   "mention": "{who} nævnte dig i {label}",
+   "reply": "{who} svarede i {label}",
+   "assigned": "{who} tildelte dig i {label}",
+   "automation": "{who} giver dig besked via en automatisering i {label}"
+  },
+  "someone": "Nogen",
+  "several_one": "1 ulæste notifikationer i basedb",
+  "several": "{count} ulæste notifikationer i basedb",
+  "greeting": "Hej {name},",
+  "open": "Åbn i basedb",
+  "more_one": "Og en mere, i basedb.",
+  "more": "Og {count} mere, i basedb.",
+  "why": "Denne mail sendes, når en notifikation forbliver ulæst i ti minutter.",
+  "settings": "For at vælge, hvad du modtager via e-mail: Indstillinger › Notifikationer."
+ },
+ "nb": {
+  "sentence": {
+   "mention": "{who} nevnte deg i {label}",
+   "reply": "{who} svarte i {label}",
+   "assigned": "{who} har tildelt deg i {label}",
+   "automation": "{who} varsler deg via en automatisering i {label}"
+  },
+  "someone": "Noen",
+  "several_one": "1 uleste varsler i basedb",
+  "several": "{count} uleste varsler i basedb",
+  "greeting": "Hei {name},",
+  "open": "Åpne i basedb",
+  "more_one": "Og ett til, i basedb.",
+  "more": "Og {count} til, i basedb.",
+  "why": "Denne e-posten sendes når et varsel forblir ulest i ti minutter.",
+  "settings": "For å velge hva du får på e-post: Innstillinger › Varsler."
+ },
+ "fi": {
+  "sentence": {
+   "mention": "{who} mainitsi sinut taulukossa {label}",
+   "reply": "{who} vastasi taulukossa {label}",
+   "assigned": "{who} nimesi sinut taulukossa {label}",
+   "automation": "{who} ilmoittaa sinulle automaation kautta taulukossa {label}"
+  },
+  "someone": "Joku",
+  "several_one": "1 lukematonta ilmoitusta basedb:ssä",
+  "several": "{count} lukematonta ilmoitusta basedb:ssä",
+  "greeting": "Hei {name},",
+  "open": "Avaa basedb:ssä",
+  "more_one": "Ja yksi lisää, basedb:ssä.",
+  "more": "Ja {count} lisää, basedb:ssä.",
+  "why": "Tämä sähköposti lähetetään, kun ilmoitus pysyy lukemattomana kymmenen minuuttia.",
+  "settings": "Voit valita, mitä saat sähköpostitse: Asetukset › Ilmoitukset."
+ },
+ "ro": {
+  "sentence": {
+   "mention": "{who} v-a menționat în {label}",
+   "reply": "{who} a răspuns în {label}",
+   "assigned": "{who} v-a desemnat în {label}",
+   "automation": "{who} vă anunță printr-o automatizare în {label}"
+  },
+  "someone": "Cineva",
+  "several_one": "1 notificare necitită în basedb",
+  "several": "{count} de notificări necitite în basedb",
+  "greeting": "Bună ziua, {name},",
+  "open": "Deschide în basedb",
+  "more_one": "Și încă o notificare, în basedb.",
+  "more": "Și încă {count} de notificări, în basedb.",
+  "why": "Acest e-mail este trimis atunci când o notificare rămâne necitită timp de zece minute.",
+  "settings": "Pentru a alege ce primiți prin e-mail: Setări › Notificări."
+ },
+ "hu": {
+  "sentence": {
+   "mention": "{who} megemlítette Önt itt: {label}",
+   "reply": "{who} válaszolt itt: {label}",
+   "assigned": "{who} Önt jelölte ki itt: {label}",
+   "automation": "{who} automatizálással értesíti Önt itt: {label}"
+  },
+  "someone": "Valaki",
+  "several_one": "1 olvasatlan értesítés a basedb-ben",
+  "several": "{count} olvasatlan értesítés a basedb-ben",
+  "greeting": "Kedves {name},",
+  "open": "Megnyitás a basedb-ben",
+  "more_one": "És még egy, a basedb-ben.",
+  "more": "És még {count}, a basedb-ben.",
+  "why": "Ez az e-mail akkor érkezik, ha egy értesítés tíz percig olvasatlan marad.",
+  "settings": "Annak kiválasztásához, hogy mit kap e-mailben: Beállítások › Értesítések."
+ },
+ "tr": {
+  "sentence": {
+   "mention": "{who}, {label} tablosunda sizden bahsetti",
+   "reply": "{who}, {label} tablosunda yanıt verdi",
+   "assigned": "{who} sizi {label} tablosunda atadı",
+   "automation": "{who}, {label} tablosundaki bir otomasyonla sizi bilgilendiriyor"
+  },
+  "someone": "Biri",
+  "several_one": "basedb’de 1 okunmamış bildirim",
+  "several": "basedb’de {count} okunmamış bildirim",
+  "greeting": "Merhaba {name},",
+  "open": "basedb’de aç",
+  "more_one": "Ve basedb’de bir tane daha.",
+  "more": "Ve basedb’de {count} tane daha.",
+  "why": "Bu e-posta, bir bildirim on dakika boyunca okunmadan kaldığında gönderilir.",
+  "settings": "E-posta ile ne aldığınızı seçmek için: Ayarlar › Bildirimler."
+ },
+ "uk": {
+  "sentence": {
+   "mention": "{who} згадує вас у {label}",
+   "reply": "{who} відповідає в {label}",
+   "assigned": "{who} призначає вас у {label}",
+   "automation": "{who} сповіщає вас через автоматизацію в {label}"
+  },
+  "someone": "Хтось",
+  "several_one": "1 непрочитане сповіщення у basedb",
+  "several": "{count} непрочитаних сповіщень у basedb",
+  "greeting": "Доброго дня, {name},",
+  "open": "Відкрити в basedb",
+  "more_one": "І ще одне, у basedb.",
+  "more": "І ще {count} інших, у basedb.",
+  "why": "Цей лист надсилається, коли сповіщення залишається непрочитаним десять хвилин.",
+  "settings": "Щоб вибрати, що ви отримуєте електронною поштою: Налаштування › Сповіщення."
+ },
+ "ja": {
+  "sentence": {
+   "mention": "{who} から「{label}」でメンションされました",
+   "reply": "{who} が「{label}」で返信しました",
+   "assigned": "{who} から「{label}」で担当者に指定されました",
+   "automation": "{who} から「{label}」のオートメーションで通知が届きました"
+  },
+  "someone": "誰か",
+  "several_one": "basedb の未読の通知が1件あります",
+  "several": "basedb の未読の通知が{count}件あります",
+  "greeting": "{name} 様、",
+  "open": "basedb で開く",
+  "more_one": "basedb にもう1件あります。",
+  "more": "basedb にあと{count}件あります。",
+  "why": "この通知が10分間未読のままの場合に、このメールが送信されます。",
+  "settings": "メールで受け取る内容を選ぶには：設定 › 通知。"
+ },
+ "zh-CN": {
+  "sentence": {
+   "mention": "{who} 在 {label} 中提及了您",
+   "reply": "{who} 在 {label} 中回复了",
+   "assigned": "{who} 在 {label} 中指派了您",
+   "automation": "{who} 通过 {label} 中的自动化通知您"
+  },
+  "someone": "有人",
+  "several_one": "basedb 中有 1 条未读通知",
+  "several": "basedb 中有 {count} 条未读通知",
+  "greeting": "{name}，您好，",
+  "open": "在 basedb 中打开",
+  "more_one": "还有 1 条，在 basedb 中。",
+  "more": "还有 {count} 条，在 basedb 中。",
+  "why": "当某条通知十分钟未被读取时，系统会发送这封邮件。",
+  "settings": "要选择您通过邮件收到的内容：设置 › 通知。"
+ },
+ "ko": {
+  "sentence": {
+   "mention": "{who} 님이 {label}에서 나를 멘션했습니다",
+   "reply": "{who} 님이 {label}에서 답글을 남겼습니다",
+   "assigned": "{who} 님이 {label}에서 나를 지정했습니다",
+   "automation": "{who} 님이 {label}에서 자동화로 알림을 보냈습니다"
+  },
+  "someone": "누군가",
+  "several_one": "basedb에 읽지 않은 알림이 1개 있습니다",
+  "several": "basedb에 읽지 않은 알림이 {count}개 있습니다",
+  "greeting": "{name}님, 안녕하세요.",
+  "open": "basedb에서 열기",
+  "more_one": "basedb에 1개가 더 있습니다.",
+  "more": "basedb에 {count}개가 더 있습니다.",
+  "why": "알림이 10분 동안 읽히지 않으면 이 이메일이 발송됩니다.",
+  "settings": "이메일로 받을 항목을 선택하려면: 설정 › 알림."
+ }
+}

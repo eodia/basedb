@@ -33,7 +33,7 @@ claude mcp add --transport http --scope project basedb "http://localhost:3000/mc
 ローカルのプログラム（stdio）しか起動できないクライアントは、リポジトリの中継プログラムを経由します。トークンは`--token-env`で指定した変数から読み込まれます：
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

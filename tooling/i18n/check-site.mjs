@@ -47,9 +47,10 @@ function walk(fr, tr, at, out) {
   if (typeof fr === 'function' || fr === null || typeof fr !== 'object') return
   if (Array.isArray(fr)) {
     if (!Array.isArray(tr)) return out.errors.push(`${at}: a list is expected`)
-    fr.forEach((item, i) =>
-      i < tr.length ? walk(item, tr[i], `${at}[${i}]`, out) : out.missing.push(`${at}[${i}]`),
-    )
+    fr.forEach((item, i) => {
+      if (i < tr.length) walk(item, tr[i], `${at}[${i}]`, out)
+      else out.missing.push(`${at}[${i}]`)
+    })
     return
   }
   if (typeof tr !== 'object' || tr === null) return out.errors.push(`${at}: an object is expected`)

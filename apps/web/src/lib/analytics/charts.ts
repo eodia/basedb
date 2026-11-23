@@ -1,17 +1,17 @@
-import { $t } from '@/lib/i18n'
 import {
   type QueryResult,
   type ResultColumn,
+  ruleColor,
   type Visualization,
   type VisualizationSettings,
-  ruleColor,
 } from '@basedb/contracts'
 import type { EChartsOption, SeriesOption } from 'echarts'
+import { $t } from '@/lib/i18n'
 import {
-  type ChartInk,
-  type FormatContext,
   axisNumber,
+  type ChartInk,
   colorOf,
+  type FormatContext,
   fieldOfColumn,
   numberOptions,
   numberText,

@@ -287,59 +287,6 @@
       "spec": { "card_fields": ["Gamme", "Prix", "Note moyenne", "Avis"], "card_size": "medium" }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Satisfaction",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Note moyenne",
-          "table": "avis",
-          "aggregate": "avg",
-          "field": "Note"
-        },
-        {
-          "kind": "number",
-          "title": "Avis à traiter",
-          "table": "avis",
-          "aggregate": "count",
-          "filter": "[Traité] eq false"
-        },
-        {
-          "kind": "number",
-          "title": "Réponses urgentes",
-          "table": "avis",
-          "aggregate": "count",
-          "filter": "[Réponse urgente] eq true and [Traité] eq false"
-        },
-        {
-          "kind": "chart",
-          "title": "Sentiment",
-          "table": "avis",
-          "group_by": "Sentiment",
-          "style": "pie"
-        },
-        {
-          "kind": "chart",
-          "title": "Thèmes abordés",
-          "table": "avis",
-          "group_by": "Thème",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "list",
-          "title": "Derniers avis négatifs",
-          "table": "avis",
-          "fields": ["Auteur", "Note", "Thème"],
-          "filter": "[Note] lte 2",
-          "sort": "-Reçu le",
-          "limit": 5,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Alerte avis urgent",

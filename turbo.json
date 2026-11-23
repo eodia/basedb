@@ -3,9 +3,6 @@
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "typecheck": { "dependsOn": ["^build"] },
-    "test:unit": { "dependsOn": ["^build"] },
-    "test:int": { "dependsOn": ["^build"], "cache": false },
-    "test:vol": { "dependsOn": ["^build"], "cache": false },
-    "test:panne": { "dependsOn": ["^build"], "cache": false }
+    "test:unit": { "dependsOn": ["^build"] }
   }
 }

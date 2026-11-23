@@ -1,8 +1,9 @@
 name: Publier l’image Docker
 
-# The basedb image — the API, the MCP server and the interface in one — on Docker Hub,
+# The basedb image — basedb-server alone: the API, the MCP server and the interface — on Docker Hub,
 # eodia/basedb: a `v0.1.1` tag publishes 0.1.1, 0.1 and latest; a prerelease
-# (`v0.2.0-rc.1`) publishes its exact version only. For amd64 and arm64 (emulated).
+# (`v0.2.0-rc.1`) publishes its exact version only. For amd64 and arm64 (the server
+# cross-compiled, the interface built once: see the Dockerfile).
 on:
   push:
     tags:
@@ -34,8 +35,10 @@ jobs:
           node scripts/catalog-migrations.mjs check --release
           version="${GITHUB_REF_NAME#v}"
           version="${version%%-*}"
-          if ! grep -q "APPLICATION_VERSION = '$version'" packages/core/src/catalog/cache.ts; then
-            echo "::error::APPLICATION_VERSION (packages/core/src/catalog/cache.ts) doit valoir '$version' pour l’étiquette $GITHUB_REF_NAME."
+          # APPLICATION_VERSION is the server's version: [workspace.package] of rust-server/Cargo.toml.
+          built="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' rust-server/Cargo.toml)"
+          if [ "$built" != "$version" ]; then
+            echo "::error::La version de rust-server/Cargo.toml ([workspace.package], APPLICATION_VERSION) doit valoir '$version' pour l’étiquette $GITHUB_REF_NAME (lue : '$built')."
             exit 1
           fi
 

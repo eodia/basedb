@@ -74,13 +74,6 @@
   "Par catégorie": "Por categoria",
   "Journal": "Diário",
   "Calendrier": "Calendário",
-  "Stocks": "Estoque",
-  "Articles à commander": "Produtos a encomendar",
-  "Articles suivis": "Produtos monitorados",
-  "Sorties ce mois-ci": "Saídas neste mês",
-  "Articles par catégorie": "Produtos por categoria",
-  "Mouvements par type": "Movimentações por tipo",
-  "Derniers mouvements": "Últimas movimentações",
   "Grosse sortie": "Saída grande",
   "Prévient quand une sortie dépasse 50 unités.": "Avisa quando uma saída ultrapassa 50 unidades.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Saída grande: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Fórmulas",
   "Galerie": "Galeria",
   "IA": "IA",
+  "Stocks": "Estoque",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Os produtos em estoque, seus fornecedores e as entradas e saídas."
 }

@@ -17,21 +17,25 @@ curl -fsSLO https://raw.githubusercontent.com/eodia/basedb/main/docker-compose.y
 curl -fsSL https://raw.githubusercontent.com/eodia/basedb/main/.env.example -o .env
 ```
 
-Ouvrez `.env` et renseignez les deux seules valeurs obligatoires :
+Rien n’y est obligatoire : le mot de passe de PostgreSQL et la clé d’instance sont tirés au
+hasard au premier démarrage, et gardés dans le volume `secrets`. Pour imposer les vôtres,
+renseignez `POSTGRES_PASSWORD` et `BASEDB_ENCRYPTION_KEY` dans `.env` avant de démarrer.
 
-```bash
-POSTGRES_PASSWORD=un-mot-de-passe-solide
-# générée une fois pour toutes : openssl rand -base64 32
-BASEDB_ENCRYPTION_KEY=…
-```
-
-Puis démarrez :
+Démarrez :
 
 ```bash
 docker compose up -d
 ```
 
-Au premier démarrage, basedb crée le catalogue. Ouvrez ensuite
+Au premier démarrage, basedb crée le catalogue. Gardez une copie de la clé d’instance, à part
+des sauvegardes de la base — sans elle, les secrets enregistrés (clés d’IA, jetons) sont
+illisibles :
+
+```bash
+docker compose exec basedb cat /run/basedb-secrets/BASEDB_ENCRYPTION_KEY
+```
+
+ Ouvrez ensuite
 [http://localhost:3000](http://localhost:3000) : la première page vous demande de **créer le
 compte administrateur**, avec votre nom, votre adresse et le mot de passe de votre choix, et
 vous êtes connecté dans la foulée.
@@ -79,18 +83,20 @@ secrets illisibles. Générez-la une fois, sauvegardez-la avec la base.
 
 ## Pour développer
 
-Prérequis : Node 22 ou plus, Docker, et `corepack enable`.
+Prérequis : Rust stable (`rustup`), Node 22 ou plus avec `corepack enable` — pour construire
+l’interface —, et Docker. Sous Windows, la chaîne Rust `msvc` (Visual Studio Build Tools) ou
+`gnu` avec MinGW-w64.
 
 ```bash
 corepack pnpm install
-corepack pnpm exec tsc -b packages/naming packages/contracts packages/catalog-schema packages/core apps/api apps/mcp
+corepack pnpm exec tsc -b packages/naming packages/contracts
 corepack pnpm start
 ```
 
 `pnpm start` choisit des ports libres, démarre un PostgreSQL 16 jetable, applique le catalogue,
 amorce un administrateur de développement (`admin@basedb.local` / `developpement-basedb`,
-adresse préremplie à la connexion), puis lance l’API, le serveur MCP et l’interface en mode
-développement. `Ctrl+C` arrête tout, conteneur compris.
+adresse préremplie à la connexion), puis lance le serveur — `basedb-server`, compilé par cargo :
+l’API et le serveur MCP — et l’interface en mode développement. `Ctrl+C` arrête tout, conteneur compris.
 
 ## Et ensuite ?
 

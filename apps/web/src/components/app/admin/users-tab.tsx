@@ -1,5 +1,18 @@
 'use client'
 
+import {
+  Check,
+  Copy,
+  Ellipsis,
+  KeyRound,
+  Loader2,
+  Pencil,
+  Search,
+  UserCheck,
+  UserPlus,
+  UserX,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { initials, sinceWhen } from '@/components/app/admin/admin-panel'
 import { SignupSettings } from '@/components/app/admin/signup-settings'
 import { cancelled, useElevated } from '@/components/app/elevation'
@@ -23,23 +36,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type AdminUser, type Group, type Me, api } from '@/lib/api/client'
+import { type AdminUser, api, type Group, type Me } from '@/lib/api/client'
 import { $t, $tp, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  Check,
-  Copy,
-  Ellipsis,
-  KeyRound,
-  Loader2,
-  Pencil,
-  Search,
-  UserCheck,
-  UserPlus,
-  UserX,
-} from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * The accounts of the tenant, created and reset without any e-mail.

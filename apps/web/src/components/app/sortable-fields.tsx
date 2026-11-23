@@ -1,21 +1,17 @@
 'use client'
 
-import { Hint } from '@/components/ui/tooltip'
-import type { Field, Table } from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -23,6 +19,10 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { ChevronRight, GripVertical, Lock } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Hint } from '@/components/ui/tooltip'
+import type { Field, Table } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * The fields of a table in the structure screen, in the order a person gives them — by

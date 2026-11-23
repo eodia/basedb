@@ -189,11 +189,8 @@ function words(html: string): string {
 					)
 				}
 				{
-					(template.dashboards.length > 0 || template.automations.length > 0) && (
+					template.automations.length > 0 && (
 						<div class="box">
-							{template.dashboards.map((d) => (
-								<p set:html={fill(g.dashboard, { label: d.label, blocks: plural(g.blocks, d.blocks.length) }, true)} />
-							))}
 							{template.automations.map((a) => (
 								<p>
 									<Fragment set:html={fill(g.automation, { label: a.label }, true)} />

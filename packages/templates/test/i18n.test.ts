@@ -1,24 +1,24 @@
 import { readdirSync } from 'node:fs'
 import {
-  type Template,
   checkTemplate,
   citedInText,
   citedLabels,
   formulaDialect,
   localizeTemplate,
+  type Template,
   templateTexts,
 } from '@basedb/contracts'
 import { describe, expect, it } from 'vitest'
-import { I18N_DIR, bundledDictionaries, bundledTemplates } from '../src/index.js'
+import { bundledDictionaries, bundledTemplates, I18N_DIR } from '../src/index.js'
 
 /**
  * The official templates in another language — every text through a dictionary, every
  * label followed where it is cited.
  *
  * A pseudo-language marks each text with a `~`: once localized, a template must still be
- * valid, and no citation may still point at a French label — a formula, a filter, a view, a
- * dashboard, an automation or a prompt left behind would be refused by the validator, or
- * would build a base that does not hold.
+ * valid, and no citation may still point at a French label — a formula, a filter, a view, an
+ * automation or a prompt left behind would be refused by the validator, or would build a base
+ * that does not hold.
  */
 
 const templates = bundledTemplates().flatMap(({ raw }) => {
@@ -61,9 +61,6 @@ describe('localizeTemplate', () => {
       }
       const filters = [
         ...localized.views.map((v) => String(v.spec.filter ?? '')),
-        ...localized.dashboards.flatMap((d) =>
-          d.blocks.map((b) => ('filter' in b ? b.filter : '')),
-        ),
         ...localized.automations.map((a) => a.condition),
       ]
       for (const filter of filters) {

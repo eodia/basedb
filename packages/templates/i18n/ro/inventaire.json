@@ -74,13 +74,6 @@
   "Par catégorie": "După categorie",
   "Journal": "Jurnal",
   "Calendrier": "Calendar",
-  "Stocks": "Stocuri",
-  "Articles à commander": "Articole de comandat",
-  "Articles suivis": "Articole urmărite",
-  "Sorties ce mois-ci": "Ieșiri luna aceasta",
-  "Articles par catégorie": "Articole după categorie",
-  "Mouvements par type": "Mișcări după tip",
-  "Derniers mouvements": "Ultimele mișcări",
   "Grosse sortie": "Ieșire mare",
   "Prévient quand une sortie dépasse 50 unités.": "Notifică atunci când o ieșire depășește 50 de unități.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Ieșire mare: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formule",
   "Galerie": "Galerie",
   "IA": "AI",
+  "Stocks": "Stocuri",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Articolele aflate în stoc, furnizorii lor și intrările și ieșirile."
 }

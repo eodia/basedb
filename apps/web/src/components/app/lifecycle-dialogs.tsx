@@ -1,5 +1,7 @@
 'use client'
 
+import { AlertTriangle, Loader2, Scissors, Trash2, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -14,18 +16,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   ApiError,
+  api,
   type CompatibilityAlias,
   type DeletedTable,
   type PhysicalRef,
   type PurgeExport,
   type RenameImpact,
-  api,
 } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, Loader2, Scissors, Trash2, Undo2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Chapter 06, on screen: the physical name of a base, a table or a field — renamed from

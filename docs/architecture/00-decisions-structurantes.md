@@ -690,6 +690,8 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `AI_DISABLED` | `ai.enabled` faux à la portée résolue | 409 | 12 |
 | `SYNC_SOURCE_FAILED` | Source d'une table synchronisée injoignable, trop grosse ou illisible ; la table garde ses lignes | 502 | 19 |
 | `TABLE_SYNCED` | Écriture d'une ligne dans une table synchronisée, en dehors de sa synchronisation | 409 | 19 |
+| `INSIGHTS_UNAVAILABLE` | insights n'est pas configuré (`BASEDB_INSIGHTS_*`) ou ne répond pas | 503 | 19 |
+| `INSIGHTS_REFUSED` | insights a refusé l'appel fait au nom de la personne ; `details.status`, `details.message` | 502 | 19 |
 | `TEMPLATE_INVALID` | Modèle de base mal formé, hors bornes, aux références non résolues ou contenant un interdit ; `details.issues[]` | 422 | 20 |
 | `AUTOMATION_WEBHOOK_FAILED` | Webhook d'une automatisation injoignable, ou réponse autre que `2xx` ; consigné dans l'exécution | 502 | 17 |
 | `AI_KEY_REJECTED` | Clé refusée par le fournisseur, à la pose ou en exploitation | 422 | 12 |
@@ -698,6 +700,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `MAIL_NOT_CONFIGURED` | Étape « Envoyer un courriel » sur une instance sans serveur d'envoi (`BASEDB_SMTP_HOST`) | 409 | 17 |
 | `GEOCODER_UNAVAILABLE` | Le service de géocodage de l'instance n'a pas répondu, ou a refusé | 502 | 11 |
 | `AI_PAYLOAD_TOO_LARGE` | Charge utile au-delà des plafonds déclarés | 422 | 12 |
+| `AI_ATTACHMENT_UNREADABLE` | Pièce jointe d'un copilote dans un format non pris en charge, ou dont le texte n'a pas pu être lu ; `details.reason` | 422 | 12 |
 | `AI_PROVIDER_UNAVAILABLE` | Délai dépassé, `5xx`, `429` amont, erreur réseau, circuit ouvert | 503 | 12 |
 | `AI_QUOTA_EXCEEDED` | Plafond mensuel ou de simultanéité atteint | 429 | 12 |
 | `AI_RESPONSE_UNUSABLE` | Réponse non conforme au schéma ou tronquée, après un réessai ; ou, pour un champ calculé par l'IA, sans valeur lisible dans le type du champ | 502 | 12 |

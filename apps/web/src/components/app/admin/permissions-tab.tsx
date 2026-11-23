@@ -1,5 +1,18 @@
 'use client'
 
+import {
+  ChevronRight,
+  Columns3,
+  Database,
+  FolderKanban,
+  Loader2,
+  Lock,
+  type LucideIcon,
+  Rows3,
+  Table2,
+  Users,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FieldRulesDialog } from '@/components/app/admin/field-rules-dialog'
 import { RowRulesDialog } from '@/components/app/admin/row-rules-dialog'
 import { cancelled, useElevated } from '@/components/app/elevation'
@@ -15,25 +28,12 @@ import {
   type AccessCell,
   type AccessGraph,
   type AccessLevel,
-  type Group,
   api,
+  type Group,
 } from '@/lib/api/client'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  ChevronRight,
-  Columns3,
-  Database,
-  FolderKanban,
-  Loader2,
-  Lock,
-  type LucideIcon,
-  Rows3,
-  Table2,
-  Users,
-} from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * The permission grid, over projects, bases and tables.

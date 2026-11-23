@@ -1,6 +1,5 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import type { ECElementEvent, EChartsOption } from 'echarts'
 import {
   BarChart,
@@ -24,10 +23,11 @@ import {
 import * as echarts from 'echarts/core'
 import { SVGRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
- * One chart, drawn by echarts — only the pieces the dashboards use, rendered in SVG: crisp
- * text at any zoom, and light enough for a dashboard of twenty cards. The options come
+ * One chart, drawn by echarts — only the pieces the questions use, rendered in SVG: crisp
+ * text at any zoom, and light enough for many charts at once. The options come
  * whole from `lib/analytics/charts.ts`; this only draws them, follows its box's size, and
  * hands a click back — a right click too, on a mark or in the band of its category: the
  * browser's own menu then gives way to the one the screen opens.

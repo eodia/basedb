@@ -1,4 +1,10 @@
+import { SHELL_SEGMENT, STATIC_BUILD } from '@/lib/static-shell'
 import App from '../page'
+
+/** The static build exports this page once, as the shell of every address (lib/static-shell.ts). */
+export function generateStaticParams(): { address: string[] }[] {
+  return STATIC_BUILD ? [{ address: [SHELL_SEGMENT] }] : []
+}
 
 /**
  * Every address of the application — `/bases/crm/tables/contacts`, `/parametres/securite`:

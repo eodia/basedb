@@ -1,14 +1,14 @@
 'use client'
 
-import { OptionBadge, hasLook } from '@/components/app/option-badge'
+import { Link2 } from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { hasLook, OptionBadge } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
 import { Combobox, type ComboboxOption, filterOptions } from '@/components/ui/combobox'
 import { Hint } from '@/components/ui/tooltip'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Link2 } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 /**
  * The two ways to choose a value — from a list of choices, and from the rows of another

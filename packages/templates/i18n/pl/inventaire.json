@@ -74,13 +74,6 @@
   "Par catégorie": "Według kategorii",
   "Journal": "Dziennik",
   "Calendrier": "Kalendarz",
-  "Stocks": "Magazyn",
-  "Articles à commander": "Artykuły do zamówienia",
-  "Articles suivis": "Śledzone artykuły",
-  "Sorties ce mois-ci": "Wydania w tym miesiącu",
-  "Articles par catégorie": "Artykuły według kategorii",
-  "Mouvements par type": "Ruchy według typu",
-  "Derniers mouvements": "Ostatnie ruchy",
   "Grosse sortie": "Duże wydanie",
   "Prévient quand une sortie dépasse 50 unités.": "Powiadamia, gdy wydanie przekroczy 50 sztuk.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Duże wydanie: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formuły",
   "Galerie": "Galeria",
   "IA": "AI",
+  "Stocks": "Magazyn",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Artykuły w magazynie, ich dostawcy oraz przyjęcia i wydania."
 }

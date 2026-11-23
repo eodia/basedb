@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { FieldIcon } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,7 +13,6 @@ import {
 import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { MAX_SORT_TERMS, type SortTerm } from '@/lib/store/workspace'
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 
 /**
  * The sort of a view that has no column headers — a kanban's cards within a column, a

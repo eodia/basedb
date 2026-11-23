@@ -1,5 +1,3 @@
-import { $t } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
   AlignLeft,
   Banknote,
@@ -32,6 +30,8 @@ import {
   UserRound,
   Waypoints,
 } from 'lucide-react'
+import { $t } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /**
  * The glyph a column header wears.

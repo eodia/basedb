@@ -74,13 +74,6 @@
   "Par catégorie": "Per categoria",
   "Journal": "Registro",
   "Calendrier": "Calendario",
-  "Stocks": "Scorte",
-  "Articles à commander": "Articoli da ordinare",
-  "Articles suivis": "Articoli monitorati",
-  "Sorties ce mois-ci": "Uscite questo mese",
-  "Articles par catégorie": "Articoli per categoria",
-  "Mouvements par type": "Movimenti per tipo",
-  "Derniers mouvements": "Ultimi movimenti",
   "Grosse sortie": "Uscita rilevante",
   "Prévient quand une sortie dépasse 50 unités.": "Avvisa quando un’uscita supera le 50 unità.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Uscita rilevante: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formule",
   "Galerie": "Galleria",
   "IA": "IA",
+  "Stocks": "Scorte",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Gli articoli in magazzino, i loro fornitori e le entrate e le uscite."
 }

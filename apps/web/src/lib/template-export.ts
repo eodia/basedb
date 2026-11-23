@@ -1,19 +1,18 @@
-import { blocksOf } from '@/lib/analytics/dashboard'
 import {
-  type AutomationStep,
-  type DescribedBase,
-  type Field,
-  type TableRef,
-  api,
-} from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import {
+  checkTemplate,
+  optionValue,
   TEMPLATE_FORMAT,
   type Template,
   VIEW_FIELD_KEYS,
-  checkTemplate,
-  optionValue,
 } from '@basedb/contracts'
+import {
+  type AutomationStep,
+  api,
+  type DescribedBase,
+  type Field,
+  type TableRef,
+} from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 
 /**
  * A base as a template — chapter 20 §6: what the person reads of it, less what a template
@@ -177,11 +176,8 @@ export async function exportTemplate(
   const omitted: string[] = []
   const keys = new Set<string>()
   const keyOfName = new Map<string, string>()
-  const keyOfId = new Map<string, string>()
   for (const table of base.tables) {
-    const key = uniqueKey(table.label, keys)
-    keyOfName.set(table.name, key)
-    keyOfId.set(table.id, key)
+    keyOfName.set(table.name, uniqueKey(table.label, keys))
   }
   const tableByName = new Map(base.tables.map((t) => [t.name, t]))
   const tableById = new Map(base.tables.map((t) => [t.id, t]))
@@ -418,59 +414,6 @@ export async function exportTemplate(
     }
   }
 
-  // ── Dashboards: the cards a template's blocks can say, the others named ──
-  const questions = new Map((await api.questions(base.name).catch(() => [])).map((q) => [q.id, q]))
-  const dashboards = (await api.dashboards(base.name).catch(() => [])).map((dashboard) => {
-    const { blocks, omitted: left } = blocksOf(dashboard.cards, dashboard.tabs, questions)
-    for (const reason of left)
-      omitted.push($t('Tableau « {label} » › {reason}', { label: dashboard.label, reason }))
-    return {
-      label: dashboard.label,
-      ...(dashboard.description === null ? {} : { description: dashboard.description }),
-      blocks: blocks.slice(0, 12).flatMap((block): Record<string, unknown>[] => {
-        if (block.kind === 'embed') return []
-        if (block.kind === 'text')
-          return [{ kind: 'text', title: block.title, width: block.width, body: block.body }]
-        const table = tableById.get(block.table)
-        if (table === undefined) return []
-        const label = (name: string | null) =>
-          name === null ? null : (table.fields.find((f) => f.name === name)?.label ?? null)
-        const common = {
-          title: block.title,
-          width: block.width,
-          table: keyOfId.get(block.table),
-          filter: filterToLabels(block.filter, table.fields),
-        }
-        if (block.kind === 'number') {
-          return [
-            { kind: 'number', ...common, aggregate: block.aggregate, field: label(block.field) },
-          ]
-        }
-        if (block.kind === 'chart') {
-          return [{ kind: 'chart', ...common, group_by: label(block.group_by), style: block.style }]
-        }
-        const sortLabel = block.sort
-          .split(',')
-          .filter((s) => s !== '')
-          .map((s) => {
-            const descending = s.startsWith('-')
-            const named = label(descending ? s.slice(1) : s)
-            return named === null ? '' : `${descending ? '-' : ''}${named}`
-          })
-          .find((s) => s !== '')
-        return [
-          {
-            kind: 'list',
-            ...common,
-            fields: block.fields.map(label).filter((f) => f !== null),
-            sort: sortLabel ?? '',
-            limit: block.limit,
-          },
-        ]
-      }),
-    }
-  })
-
   // ── Automations: every action but those that call outside ──
   const exportedAutomations = automations.flatMap((automation) => {
     // A template carries a sequence of actions on the triggering row: a flow — a condition
@@ -569,9 +512,9 @@ export async function exportTemplate(
       const list = page?.data ?? []
       read.set(table.name, list)
       const key = keyOfName.get(table.name) as string
-      list.forEach((row, index) =>
-        rowKeys.set(`${table.name}:${String(row._id)}`, `${key}-${index + 1}`),
-      )
+      list.forEach((row, index) => {
+        rowKeys.set(`${table.name}:${String(row._id)}`, `${key}-${index + 1}`)
+      })
     }
     const rowKey = (tableName: string, id: string) => rowKeys.get(`${tableName}:${id}`)
     for (const table of base.tables) {
@@ -612,7 +555,6 @@ export async function exportTemplate(
     links,
     rows,
     views,
-    dashboards,
     automations: exportedAutomations,
   }
   const strict = checkTemplate(raw)

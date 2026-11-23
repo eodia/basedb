@@ -1,4 +1,4 @@
-import { type Locale, acceptedLanguages, isLocale, matchLocale } from '@basedb/contracts'
+import { acceptedLanguages, isLocale, type Locale, matchLocale } from '@basedb/contracts'
 import { cookies, headers } from 'next/headers'
 import { LOCALE_COOKIE, type Messages } from './i18n'
 

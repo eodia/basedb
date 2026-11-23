@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  LOCALES,
-  LOCALE_NAMES,
   acceptedLanguages,
+  LOCALE_NAMES,
+  LOCALES,
   localeOfTag,
   matchLocale,
 } from '../src/locales.js'

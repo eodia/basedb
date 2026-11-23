@@ -1,18 +1,18 @@
 'use client'
 
+import { Check, Link2Off, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { AccountForm } from '@/components/account-form'
-import { AuthLayout, PRESSABLE, REVEAL, pauseOnSuccess, revealAt } from '@/components/auth-layout'
+import { AuthLayout, PRESSABLE, pauseOnSuccess, REVEAL, revealAt } from '@/components/auth-layout'
 import { Login, OidcButtons } from '@/components/login'
 import { Button } from '@/components/ui/button'
-import { type AccessLevel, type InvitationPreview, type Me, api } from '@/lib/api/client'
+import { type AccessLevel, api, type InvitationPreview, type Me } from '@/lib/api/client'
 import { withBase } from '@/lib/base-path'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
+import { useRouteToken } from '@/lib/route-token'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import { Check, Link2Off, Loader2 } from 'lucide-react'
-import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The page an invitation's link opens — chapter 05 §15.8.
@@ -59,8 +59,7 @@ function offer(preview: InvitationPreview): string {
 }
 
 export default function InvitationPage() {
-  const params = useParams<{ token: string }>()
-  const token = decodeURIComponent(params.token ?? '')
+  const token = decodeURIComponent(useRouteToken())
   const [page, setPage] = useState<Page>({ kind: 'loading' })
   const [mode, setMode] = useState<'signup' | 'login'>('signup')
   const [joining, setJoining] = useState(false)

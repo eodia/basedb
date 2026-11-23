@@ -2,13 +2,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      // Ce que `scripts/start.mjs` exige avant de démarrer : il refuse de lancer une
-      // API qui n'est pas compilée plutôt que de servir une version d'hier.
-      "label": "Compiler l'API et l'interface",
+      // Le serveur (rust-server) : `scripts/start.mjs` le recompile lui-même avant de
+      // démarrer ; cette tâche en fait autant, avec les erreurs dans l'onglet Problèmes.
+      "label": "Compiler le serveur",
       "type": "shell",
-      "command": "corepack pnpm exec tsc -b apps/api apps/mcp apps/web",
+      "command": "cargo build --manifest-path rust-server/Cargo.toml -p basedb-server",
       "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": ["$tsc"],
+      "problemMatcher": ["$rustc"],
       "presentation": { "reveal": "silent", "panel": "shared", "clear": true },
       "group": "build"
     },

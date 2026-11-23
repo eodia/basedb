@@ -2030,11 +2030,6 @@ export default {
 		download: '下载 JSON',
 		downloadNote: '可导入您的实例，或先行修改，再提交到模板目录。',
 		viewMeta: '— {kind}，{table}',
-		dashboard: '<strong>仪表盘</strong>“{label}”— {blocks}',
-		blocks: {
-			one: '{n} 个区块',
-			other: '{n} 个区块',
-		},
 		automation: '<strong>自动化</strong>“{label}”',
 		yes: '是',
 		no: '否',

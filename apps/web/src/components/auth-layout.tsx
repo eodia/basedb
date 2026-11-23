@@ -1,12 +1,12 @@
 'use client'
 
+import { CircleAlert, Eye, EyeOff } from 'lucide-react'
+import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import { Brand } from '@/components/brand'
 import { ProductGlimpse } from '@/components/product-glimpse'
 import { Input } from '@/components/ui/input'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { CircleAlert, Eye, EyeOff } from 'lucide-react'
-import type { CSSProperties, ComponentProps, ReactNode } from 'react'
 
 /**
  * The screens before a session: sign-in, and the creation of the first administrator.

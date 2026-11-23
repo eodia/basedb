@@ -96,4 +96,4 @@ export function applyNameRestrictions(
   return { candidate: escaped, needsSuffixLoop: isReservedForScope(escaped, scope) }
 }
 
-export { isReservedWord, RESERVED_WORDS, type Catcode } from './reserved-words.js'
+export { type Catcode, isReservedWord, RESERVED_WORDS } from './reserved-words.js'

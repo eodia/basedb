@@ -33,7 +33,7 @@ claude mcp add --transport http --scope project basedb "http://localhost:3000/mc
 只能启动本地程序（stdio）的客户端，则通过仓库提供的中继程序，它会从 `--token-env` 指定的变量中读取令牌：
 
 ```bash
-claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
+claude mcp add basedb -- node <dépôt basedb>/scripts/mcp-relay.mjs \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 

@@ -35,6 +35,7 @@ For each batch `app-NN.json`, write `app-NN.json` in your work folder (given in 
 a JSON object with **exactly the same keys** as the batch (copy each key character for
 character — some contain non-breaking spaces, typographic apostrophes ’, « », …) and as
 value:
+
 - for a sentence: the translation, a string;
 - for a sentence with `one`/`other`: an object with exactly the plural categories of your
   language (given in your task), each a full translation — e.g. Polish
@@ -63,7 +64,7 @@ source grew; what matters is 0 missing and 0 errors).
   `||`, and its meaning after it (here a medium row height, not an average). Translate the
   word only, in that meaning — the part after `||` never appears in your translation.
 - **Fragments**: some keys are pieces of one sentence split around a link, a bold word or a
-  value (they often start with ` · `, ` — `, a space, or end with a space). Keep the same
+  value (they often start with `·`, `—`, a space, or end with a space). Keep the same
   leading/trailing spaces and punctuation, and translate them so the pieces read naturally
   in order — open `where` to see the sentence they form.
 - **Style**: follow the `register`; short labels stay short; buttons as your language's UI

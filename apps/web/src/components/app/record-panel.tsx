@@ -1,5 +1,7 @@
 'use client'
 
+import { ExternalLink, Link2, Mail, Maximize2, Pencil, Phone, RefreshCw, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AddressInput } from '@/components/app/address'
 import { AiEmpty } from '@/components/app/ai-pending'
 import { Viewers } from '@/components/app/collab'
@@ -11,25 +13,25 @@ import { FieldButton } from '@/components/app/field-button'
 import { FieldIcon, shownFormat } from '@/components/app/field-icon'
 import { FilesField, type Upload } from '@/components/app/files'
 import { todayAnswer } from '@/components/app/forms/answers'
-import { type Row, display } from '@/components/app/grid/cell'
+import { display, type Row } from '@/components/app/grid/cell'
 import { HistoryList } from '@/components/app/history'
 import { LongTextView, MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
+  choicesOf,
   EnumPicker,
   LinkChips,
   LinkPicker,
+  linksOf,
   MultiEnumPicker,
   MultiLinkPicker,
   type SearchLink,
-  choicesOf,
-  linksOf,
 } from '@/components/app/pickers'
 import { ResizablePanel } from '@/components/app/resizable-panel'
 import { RichTextEditor } from '@/components/app/rich-text-editor'
 import {
-  TableFieldsProvider,
   citableColumns,
+  TableFieldsProvider,
   useRawText,
   useTableFields,
 } from '@/components/app/table-fields'
@@ -43,13 +45,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
 import {
+  api,
   type Field,
+  filesOf,
   type LinkOption,
   type ReferencedBlock,
   type Table,
   type Viewer,
-  api,
-  filesOf,
 } from '@/lib/api/client'
 import { templateToLabels, templateToNames } from '@/lib/card-template'
 import { shownField } from '@/lib/computed'
@@ -57,8 +59,6 @@ import { isDateKind, storedFromText } from '@/lib/dates'
 import { editText, formatOf, parseNumberInput } from '@/lib/format'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Link2, Mail, Maximize2, Pencil, Phone, RefreshCw, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The detail view — chapter 11 §5.
@@ -987,6 +987,7 @@ function LongTextField({
       if (live) void onCommit(stored(next))
     }
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: listens for focus and keys bubbling up from the editor inside
       <div
         // Leaving the editor saves — unless the focus went to one of its own menus, which
         // live in a portal: React still bubbles their focus here, and that cancels it.

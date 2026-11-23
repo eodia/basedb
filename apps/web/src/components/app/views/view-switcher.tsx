@@ -1,5 +1,38 @@
 'use client'
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  Ellipsis,
+  GripVertical,
+  Lock,
+  LockOpen,
+  Pencil,
+  Settings2,
+  Share2,
+  Table2,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,39 +56,6 @@ import type { SavedView, ViewKind } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { KIND_INFO, VIEW_KINDS } from '@/lib/views'
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import {
-  Check,
-  ChevronDown,
-  Copy,
-  Ellipsis,
-  GripVertical,
-  Lock,
-  LockOpen,
-  Pencil,
-  Settings2,
-  Share2,
-  Table2,
-  Trash2,
-  UserRound,
-} from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 /**
  * The view selector — to the left of « Filtrer », where the eye starts reading the

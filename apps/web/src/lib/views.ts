@@ -1,4 +1,3 @@
-import { $t } from '@/lib/i18n'
 // Relative, as `messages.ts` does: the unit tests run without the `@/` alias.
 import {
   FORM_ALIGNS,
@@ -29,6 +28,7 @@ import {
   Table2,
   Trophy,
 } from 'lucide-react'
+import { $t } from '@/lib/i18n'
 import type { Field, SavedView, Table, ViewKind } from './api/client'
 import { type DateKind, fromStored, isDateKind } from './dates'
 import { weekStart } from './preferences'

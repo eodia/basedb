@@ -1,18 +1,17 @@
 'use client'
 
-import { QuestionView, draftOf } from '@/components/app/analytics/question-view'
-import { ApiError, type DescribedBase, type Question, api } from '@/lib/api/client'
+import { Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { draftOf, QuestionView } from '@/components/app/analytics/question-view'
+import { ApiError, api, type DescribedBase, type Question } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
-import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 /**
  * A question in a tab of the workspace (chapter 18 §1): built with the mouse or written in
  * SQL — what the SQL tab and the saved queries of earlier versions are now —, shown as a table
- * or a chart, run with the reader's own rights, read only once saved — the same question as on
- * a dashboard. The tab keeps its draft: another tab and back finds it as left.
+ * or a chart, run with the reader's own rights, read only once saved. The tab keeps its draft: another tab and back finds it as left.
  */
 export function QuestionTab({
   base,
@@ -24,7 +23,7 @@ export function QuestionTab({
   readonly tab: Tab
   /** The caller manages the base's structure: they may share a question. */
   readonly manages: boolean
-  /** A question was saved, renamed or deleted: the dashboards list them. */
+  /** A question was saved, renamed or deleted: the lists that show them follow. */
   readonly onNavigationChanged?: () => void
 }) {
   const setQuestionDraft = useWorkspace((s) => s.setQuestionDraft)

@@ -1,15 +1,15 @@
 'use client'
 
+import { ChevronRight, KeyRound, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
 import { accessLabel, doorsOf, stateOf } from '@/components/app/token-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { type OwnApiToken, api } from '@/lib/api/client'
+import { api, type OwnApiToken } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { ChevronRight, KeyRound, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
 
 /**
  * The integration tokens one minted, on every base — chapter 11 §10.

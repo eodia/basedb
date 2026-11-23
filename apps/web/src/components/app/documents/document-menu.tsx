@@ -1,5 +1,8 @@
 'use client'
 
+import { FileText, Loader2, Settings2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { DocumentTemplatesDialog } from '@/components/app/documents/templates-dialog'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,12 +14,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Hint } from '@/components/ui/tooltip'
-import { type DocumentTemplate, type Table, api } from '@/lib/api/client'
+import { api, type DocumentTemplate, type Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
-import { FileText, Loader2, Settings2 } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
 
 /**
  * « Document », on a row's sheet — chapter 21: the row as a PDF, with one of its table's

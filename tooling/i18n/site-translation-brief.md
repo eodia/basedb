@@ -31,6 +31,7 @@ example: `import type { DeepPartial, Dict } from './index'` and
 `fr.ts`, including meta titles and descriptions, aria-labels and alt texts, the mock-up
 texts (column headers, statuses…), the FAQ, the bento cards, the what's-new entries and the
 roadmap, the gallery labels and every template card. Keep:
+
 - the structure and key names of `fr.ts` (records keyed by name stay keyed by the same
   names; lists are translated whole, same number of items);
 - HTML tags (`<strong>`, `<code>`, `<a href="…">`) and site paths exactly as in French (paths
@@ -42,9 +43,9 @@ roadmap, the gallery labels and every template card. Keep:
 - product names, code, SQL, formula function names (the formula language is French), the
   PostgreSQL physical names in the mock-ups (`clients`, `montant`…);
 - the changelog dates as they are (ISO days — the page formats them).
-Make the marketing copy read as if it had been written in your language: natural, concise,
-same tone (confident, precise, no hype). Keep the length of titles and card texts close to
-the French so the layout holds.
+  Make the marketing copy read as if it had been written in your language: natural, concise,
+  same tone (confident, precise, no hype). Keep the length of titles and card texts close to
+  the French so the layout holds.
 
 Write the file with the Write tool (not a shell heredoc: heredocs on this machine corrupt
 backslashes and `\u` escapes). Then run, from the repository root,

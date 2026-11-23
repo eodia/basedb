@@ -1,13 +1,13 @@
 'use client'
 
+import { quizPercent } from '@basedb/contracts'
+import { Check, Trophy, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { Field, QuizOutcome } from '@/lib/api/client'
 import { displayStored } from '@/lib/dates'
 import { formatNumber } from '@/lib/format'
 import { $t, $tp } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { quizPercent } from '@basedb/contracts'
-import { Check, Trophy, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { yesNoKeys } from './answers'
 
 /**

@@ -74,13 +74,6 @@
   "Par catégorie": "За категорією",
   "Journal": "Журнал",
   "Calendrier": "Календар",
-  "Stocks": "Запаси",
-  "Articles à commander": "Товари для замовлення",
-  "Articles suivis": "Товари під контролем",
-  "Sorties ce mois-ci": "Видачі цього місяця",
-  "Articles par catégorie": "Товари за категорією",
-  "Mouvements par type": "Переміщення за типом",
-  "Derniers mouvements": "Останні переміщення",
   "Grosse sortie": "Велика видача",
   "Prévient quand une sortie dépasse 50 unités.": "Сповіщає, коли видача перевищує 50 одиниць.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Велика видача: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Формули",
   "Galerie": "Галерея",
   "IA": "ШІ",
+  "Stocks": "Запаси",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Товари на складі, їхні постачальники та надходження і видачі."
 }

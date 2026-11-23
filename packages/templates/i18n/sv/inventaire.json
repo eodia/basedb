@@ -74,13 +74,6 @@
   "Par catégorie": "Efter kategori",
   "Journal": "Logg",
   "Calendrier": "Kalender",
-  "Stocks": "Lagerstatus",
-  "Articles à commander": "Artiklar att beställa",
-  "Articles suivis": "Bevakade artiklar",
-  "Sorties ce mois-ci": "Utleveranser denna månad",
-  "Articles par catégorie": "Artiklar per kategori",
-  "Mouvements par type": "Lagerrörelser per typ",
-  "Derniers mouvements": "Senaste lagerrörelserna",
   "Grosse sortie": "Stor utleverans",
   "Prévient quand une sortie dépasse 50 unités.": "Meddelar när en utleverans överstiger 50 enheter.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Stor utleverans: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formler",
   "Galerie": "Galleri",
   "IA": "AI",
+  "Stocks": "Lagerstatus",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Artiklarna i lager, deras leverantörer samt in- och utleveranserna."
 }

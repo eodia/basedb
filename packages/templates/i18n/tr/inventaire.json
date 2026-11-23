@@ -74,13 +74,6 @@
   "Par catégorie": "Kategoriye göre",
   "Journal": "Kayıt defteri",
   "Calendrier": "Takvim",
-  "Stocks": "Stoklar",
-  "Articles à commander": "Sipariş edilecek ürünler",
-  "Articles suivis": "Takip edilen ürünler",
-  "Sorties ce mois-ci": "Bu ayki çıkışlar",
-  "Articles par catégorie": "Kategoriye göre ürünler",
-  "Mouvements par type": "Türe göre hareketler",
-  "Derniers mouvements": "Son hareketler",
   "Grosse sortie": "Büyük çıkış",
   "Prévient quand une sortie dépasse 50 unités.": "Bir çıkış 50 birimi aştığında bildirir.",
   "Grosse sortie : {{Libellé}} ({{Quantité}})": "Büyük çıkış: {{Libellé}} ({{Quantité}})",
@@ -92,5 +85,6 @@
   "Formules": "Formüller",
   "Galerie": "Galeri",
   "IA": "Yapay zeka",
+  "Stocks": "Stoklar",
   "Les articles en stock, leurs fournisseurs et les entrées et sorties.": "Stoktaki ürünler, tedarikçileri ve giriş çıkışlar."
 }

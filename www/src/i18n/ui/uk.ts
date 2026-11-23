@@ -2071,13 +2071,6 @@ export default {
 		download: 'Завантажити JSON',
 		downloadNote: 'Щоб імпортувати його у свій екземпляр або адаптувати, перш ніж запропонувати до каталогу.',
 		viewMeta: '— {kind}, {table}',
-		dashboard: '<strong>Інформаційна панель</strong> «{label}» — {blocks}',
-		blocks: {
-			one: '{n} блок',
-			few: '{n} блоки',
-			many: '{n} блоків',
-			other: '{n} блоку',
-		},
 		automation: '<strong>Автоматизація</strong> «{label}»',
 		yes: 'Так',
 		no: 'Ні',

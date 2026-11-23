@@ -10,7 +10,7 @@ import {
   NodeApiError,
   type ResourceMapperFields,
 } from 'n8n-workflow'
-import { type Member, type MetaBase, type MetaTable, columnsOf } from './logic'
+import { columnsOf, type Member, type MetaBase, type MetaTable } from './logic'
 
 /**
  * basedb's REST API as the nodes call it: `/api/v1/<tenant>/…` on the instance of the

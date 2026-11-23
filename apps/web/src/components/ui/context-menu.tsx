@@ -1,9 +1,9 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import * as ContextMenuPrimitive from '@radix-ui/react-context-menu'
 import { ChevronRightIcon } from 'lucide-react'
 import type * as React from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * The right-click menu.
@@ -137,13 +137,13 @@ function ContextMenuShortcut({ className, ...props }: React.ComponentProps<'span
 
 export {
   ContextMenu,
-  ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuSub,
-  ContextMenuSubTrigger,
   ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
 }

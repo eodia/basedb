@@ -1,14 +1,14 @@
 'use client'
 
+import { useId } from 'react'
 import { Choice } from '@/components/ui/choice'
 import { Switch } from '@/components/ui/switch'
 import type { DocumentSpec, Table } from '@/lib/api/client'
-import { $t, LOCALES, LOCALE_NAMES } from '@/lib/i18n'
-import { useId } from 'react'
+import { $t, LOCALE_NAMES, LOCALES } from '@/lib/i18n'
 import { RichField } from './blocks'
 import { ColorPicker, Section, Segmented, Setting } from './controls'
 import { ImageInput } from './image-input'
-import { ACCENTS, TEXT_COLORS, imageFields, shown } from './model'
+import { ACCENTS, imageFields, shown, TEXT_COLORS } from './model'
 
 /**
  * The template's look, apart from its blocks — chapter 21 §1.1 and §1.2: colours, faces,

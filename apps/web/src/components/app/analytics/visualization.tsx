@@ -1,5 +1,17 @@
 'use client'
 
+import {
+  type MapRegion,
+  type QueryResult,
+  type ResultColumn,
+  ruleColor,
+  ruleHolds,
+  type Visualization,
+  type VisualizationSettings,
+} from '@basedb/contracts'
+import type { ECElementEvent } from 'echarts'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Loader2, Minus } from 'lucide-react'
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { EChart, registerMap } from '@/components/app/analytics/echart'
 import { OptionBadge } from '@/components/app/option-badge'
 import {
@@ -16,11 +28,11 @@ import {
 import {
   type FormatBase,
   type FormatContext,
-  STATUS,
   fieldOfColumn,
   inkOf,
   numberOptions,
   numberText,
+  STATUS,
   valueText,
 } from '@/lib/analytics/format'
 import type { DrillPoint } from '@/lib/analytics/model'
@@ -29,18 +41,6 @@ import { $t, intlLocale } from '@/lib/i18n'
 import { useMembers } from '@/lib/members'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import {
-  type MapRegion,
-  type QueryResult,
-  type ResultColumn,
-  type Visualization,
-  type VisualizationSettings,
-  ruleColor,
-  ruleHolds,
-} from '@basedb/contracts'
-import type { ECElementEvent } from 'echarts'
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Loader2, Minus } from 'lucide-react'
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * A result, drawn — chapter 18 §3. The same result reads as a table, a pivot, a number, a
@@ -63,7 +63,7 @@ export interface VizProps {
   readonly sorted?: boolean
   readonly onDrill?: (event: DrillEvent) => void
   readonly onRecord?: (table: string, id: string) => void
-  /** Inside a dashboard card: tighter. */
+  /** Inside a small frame: tighter. */
   readonly dense?: boolean
 }
 
@@ -850,9 +850,9 @@ function PivotViz({
               </th>
             ))}
             {columns.map((c) =>
-              metricColumns.map((m, j) => (
+              metricColumns.map((m) => (
                 <th
-                  key={`${keyOf(c)}${j}`}
+                  key={`${keyOf(c)}|${m.name}`}
                   className="whitespace-nowrap border-b px-3 py-2 text-right text-xs font-medium"
                 >
                   {colDims.length === 0
@@ -889,12 +889,12 @@ function PivotViz({
                 </td>
               ))}
               {columns.map((c) =>
-                metricColumns.map((_, j) => {
+                metricColumns.map((m, j) => {
                   const cell = cells.get(`${keyOf(r)}|${keyOf(c)}`)
                   const n = cell?.[j] ?? 0
                   return (
                     <td
-                      key={`${keyOf(c)}${j}`}
+                      key={`${keyOf(c)}|${m.name}`}
                       className={cn('border-b border-border/60 text-right tabular-nums', density)}
                       style={cell === undefined ? undefined : tint(n, j)}
                     >
@@ -927,8 +927,11 @@ function PivotViz({
                 {$t('Total')}
               </td>
               {columns.map((c) =>
-                metricColumns.map((_, j) => (
-                  <td key={`${keyOf(c)}${j}`} className={cn('text-right tabular-nums', density)}>
+                metricColumns.map((m, j) => (
+                  <td
+                    key={`${keyOf(c)}|${m.name}`}
+                    className={cn('text-right tabular-nums', density)}
+                  >
                     {show(
                       sum((_row, col) => col === keyOf(c), j),
                       j,

@@ -441,61 +441,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Ventes",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "En jeu",
-          "table": "opportunites",
-          "aggregate": "sum",
-          "field": "Montant",
-          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\""
-        },
-        {
-          "kind": "number",
-          "title": "Gagné",
-          "table": "opportunites",
-          "aggregate": "sum",
-          "field": "Montant",
-          "filter": "[Étape] eq \"Gagnée\""
-        },
-        {
-          "kind": "number",
-          "title": "Opportunités ouvertes",
-          "table": "opportunites",
-          "aggregate": "count",
-          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\""
-        },
-        {
-          "kind": "chart",
-          "title": "Pipeline par étape",
-          "table": "opportunites",
-          "group_by": "Étape",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "chart",
-          "title": "Risque",
-          "table": "opportunites",
-          "group_by": "Risque",
-          "style": "pie"
-        },
-        {
-          "kind": "list",
-          "title": "Prochaines clôtures",
-          "table": "opportunites",
-          "fields": ["Nom", "Montant", "Clôture prévue", "Prochaine étape conseillée"],
-          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\"",
-          "sort": "Clôture prévue",
-          "limit": 5,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Opportunité gagnée",

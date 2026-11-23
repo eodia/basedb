@@ -1,5 +1,42 @@
 'use client'
 
+import {
+  ArchiveX,
+  BookOpen,
+  Bot,
+  Check,
+  ChevronRight,
+  Clock,
+  Copy,
+  Database,
+  Ellipsis,
+  Eye,
+  FileCode2,
+  FileJson,
+  FolderOpen,
+  GitCompareArrows,
+  KeyRound,
+  Layers,
+  LayoutDashboard,
+  type LucideIcon,
+  PanelLeft,
+  Pencil,
+  Plug,
+  Plus,
+  Puzzle,
+  Search,
+  Shield,
+  Table2,
+  Trash2,
+  TriangleAlert,
+  Upload,
+  UserPlus,
+  Users,
+  Webhook,
+  Workflow,
+  Zap,
+} from 'lucide-react'
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
 import type { AdminTab } from '@/components/app/admin/admin-panel'
 import { DeleteBaseDialog, EditBaseDialog } from '@/components/app/base-menu'
 import {
@@ -56,46 +93,10 @@ import type {
   SqlViewSummary,
 } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
+import { useInsightsAvailable } from '@/lib/insights'
 import { useSidebar } from '@/lib/store/sidebar'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  ArchiveX,
-  BookOpen,
-  Bot,
-  Check,
-  ChevronRight,
-  Clock,
-  Copy,
-  Database,
-  Ellipsis,
-  Eye,
-  FileCode2,
-  FileJson,
-  FolderOpen,
-  GitCompareArrows,
-  KeyRound,
-  Layers,
-  LayoutDashboard,
-  type LucideIcon,
-  PanelLeft,
-  Pencil,
-  Plug,
-  Plus,
-  Puzzle,
-  Search,
-  Shield,
-  Table2,
-  Trash2,
-  TriangleAlert,
-  Upload,
-  UserPlus,
-  Users,
-  Webhook,
-  Workflow,
-  Zap,
-} from 'lucide-react'
-import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 /**
  * The left column — chapter 11, reorganized around projects (chapter 05 §15).
@@ -215,6 +216,9 @@ export function Sidebar({
   const [dialog, setDialog] = useState<BaseDialog | null>(null)
 
   const collapsed = useSidebar((s) => s.collapsed)
+  // insights' dashboards, offered only where insights is (a deployment may leave it out).
+  const dashboards = useInsightsAvailable() === true
+  const automations = base?.actions.includes('manage_schema') === true
 
   // The current base is always unfolded: it is the one whose table is open, or the one
   // just chosen, and its tables are what one reaches for next.
@@ -315,14 +319,16 @@ export function Sidebar({
   )
   const baseItems = (
     <>
-      <Item
-        icon={LayoutDashboard}
-        label={$t('Tableaux de bord')}
-        active={section === 'dashboards'}
-        onClick={() => onSection('dashboards')}
-        disabled={base === null}
-      />
-      {base?.actions.includes('manage_schema') === true && (
+      {dashboards && (
+        <Item
+          icon={LayoutDashboard}
+          label={$t('Tableaux de bord')}
+          active={section === 'dashboards'}
+          onClick={() => onSection('dashboards')}
+          disabled={base === null}
+        />
+      )}
+      {automations && (
         <Item
           icon={Zap}
           label={$t('Automatisations')}
@@ -557,7 +563,7 @@ export function Sidebar({
 
       {/* The open base's own screens, just above the profile: the column above lists the
           bases, this card acts on the one that is open. */}
-      {base !== null && (
+      {base !== null && (dashboards || automations) && (
         <div className="px-3 pb-3">
           <Card className="p-1.5">
             <p className="truncate px-2 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

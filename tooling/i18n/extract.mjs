@@ -4,7 +4,7 @@
 //
 // Reads every `$t('…')` and `$tp(n, '…', '…')` of apps/web/src, plus the texts the
 // interface translates without writing them itself — the descriptions of the system
-// columns (packages/core) and the cards of the official templates (packages/templates) —
+// columns (rust-server/crates/catalog) and the cards of the official templates (packages/templates) —
 // and writes tooling/i18n/app-source.json: each French sentence, its plural forms when it
 // has some, and where it is used, for the translator's context.
 import fs from 'node:fs'
@@ -79,13 +79,10 @@ for (const file of walk(path.join(web, 'src'))) {
 }
 
 // The descriptions of the system columns, as the server writes them.
-const description = fs.readFileSync(
-  path.join(root, 'packages/core/src/catalog/description.ts'),
-  'utf8',
-)
-const block = /SYSTEM_COLUMN_DESCRIPTIONS[^{]*\{([\s\S]*?)\n\}/.exec(description)?.[1] ?? ''
-for (const m of block.matchAll(/^\s*\w+:\s*'((?:[^'\\]|\\.)*)'/gm))
-  add(m[1], 'packages/core/src/catalog/description.ts')
+const DESCRIPTION = 'rust-server/crates/catalog/src/description.rs'
+const description = fs.readFileSync(path.join(root, DESCRIPTION), 'utf8')
+const block = /fn system_column_description[^{]*\{([\s\S]*?)\n\}/.exec(description)?.[1] ?? ''
+for (const m of block.matchAll(/^\s*"_\w+"\s*=>\s*"((?:[^"\\]|\\.)*)"/gm)) add(m[1], DESCRIPTION)
 
 // The cards of the official templates.
 const catalog = path.join(root, 'packages/templates/catalog')

@@ -1,0 +1,2487 @@
+[
+ {
+  "input": "",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "   ",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<p></p>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<p>&nbsp;</p>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<hr>",
+  "rich": "<hr />",
+  "plain": ""
+ },
+ {
+  "input": "<p>Bonjour</p>",
+  "rich": "<p>Bonjour</p>",
+  "plain": "Bonjour"
+ },
+ {
+  "input": "texte nu",
+  "rich": "texte nu",
+  "plain": "texte nu"
+ },
+ {
+  "input": "<P>Maj</P>",
+  "rich": "<p>Maj</p>",
+  "plain": "Maj"
+ },
+ {
+  "input": "<p>Un &amp; deux</p><p>trois</p>",
+  "rich": "<p>Un &amp; deux</p><p>trois</p>",
+  "plain": "Un & deux\ntrois"
+ },
+ {
+  "input": "<b>gras</b> <strong>fort</strong>",
+  "rich": "gras <strong>fort</strong>",
+  "plain": "gras fort"
+ },
+ {
+  "input": "<script>alert(1)</script>ok",
+  "rich": "ok",
+  "plain": "ok"
+ },
+ {
+  "input": "<style>p{}</style><p>x</p>",
+  "rich": "<p>x</p>",
+  "plain": "x"
+ },
+ {
+  "input": "<textarea>a<b>c</textarea>d",
+  "rich": "d",
+  "plain": "d"
+ },
+ {
+  "input": "<a href=\"https://x.fr\" title=\"t\" target=\"_self\" onclick=\"z()\">lien</a>",
+  "rich": "<a href=\"https://x.fr\" title=\"t\" rel=\"noopener noreferrer nofollow\" target=\"_blank\">lien</a>",
+  "plain": "lien"
+ },
+ {
+  "input": "<a href=\"javascript:alert(1)\">x</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">x</a>",
+  "plain": "x"
+ },
+ {
+  "input": "<a href=\"//evil.com\">x</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">x</a>",
+  "plain": "x"
+ },
+ {
+  "input": "<a href=\" java\tscript:alert(1)\">x</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">x</a>",
+  "plain": "x"
+ },
+ {
+  "input": "<a href=\"mailto:a@b.fr\">m</a>",
+  "rich": "<a href=\"mailto:a@b.fr\" rel=\"noopener noreferrer nofollow\">m</a>",
+  "plain": "m"
+ },
+ {
+  "input": "<a href=\"ftp://x\">f</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">f</a>",
+  "plain": "f"
+ },
+ {
+  "input": "<a href=\"\">vide</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">vide</a>",
+  "plain": "vide"
+ },
+ {
+  "input": "<a href>nu</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">nu</a>",
+  "plain": "nu"
+ },
+ {
+  "input": "<a target>t</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\" target=\"_blank\">t</a>",
+  "plain": "t"
+ },
+ {
+  "input": "<a href=\"/relatif?a=1&b=2\">r</a>",
+  "rich": "<a href=\"/relatif?a=1&amp;b=2\" rel=\"noopener noreferrer nofollow\">r</a>",
+  "plain": "r"
+ },
+ {
+  "input": "<a href=\"a&quot;b\">q</a>",
+  "rich": "<a href=\"a&quot;b\" rel=\"noopener noreferrer nofollow\">q</a>",
+  "plain": "q"
+ },
+ {
+  "input": "<a HREF='x' TITLE=y>z</a>",
+  "rich": "<a href=\"x\" title=\"y\" rel=\"noopener noreferrer nofollow\">z</a>",
+  "plain": "z"
+ },
+ {
+  "input": "<p>javascript: est un mot</p>",
+  "rich": "<p>javascript&#58; est un mot</p>",
+  "plain": "javascript: est un mot"
+ },
+ {
+  "input": "<p>online = oui</p>",
+  "rich": "<p>online = oui</p>",
+  "plain": "online = oui"
+ },
+ {
+  "input": "<p> onx=1</p>",
+  "rich": "<p> onx&#61;1</p>",
+  "plain": "onx=1"
+ },
+ {
+  "input": "<ul><li>a<li>b</ul>",
+  "rich": "<ul><li>a</li><li>b</li></ul>",
+  "plain": "ab"
+ },
+ {
+  "input": "<p>a<p>b",
+  "rich": "<p>a</p><p>b</p>",
+  "plain": "ab"
+ },
+ {
+  "input": "</p>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "</br>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<br/>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<br />",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "a<br>b",
+  "rich": "a<br />b",
+  "plain": "a\nb"
+ },
+ {
+  "input": "<h1>t</h1><h4>q</h4>",
+  "rich": "<h1>t</h1>q",
+  "plain": "t\nq"
+ },
+ {
+  "input": "<pre><code>x &lt; y</code></pre>",
+  "rich": "<pre><code>x &lt; y</code></pre>",
+  "plain": "x < y"
+ },
+ {
+  "input": "<!-- commentaire --><p>x</p>",
+  "rich": "<p>x</p>",
+  "plain": "x"
+ },
+ {
+  "input": "<![CDATA[x]]>y",
+  "rich": "y",
+  "plain": "y"
+ },
+ {
+  "input": "<!doctype html><p>d</p>",
+  "rich": "<p>d</p>",
+  "plain": "d"
+ },
+ {
+  "input": "<?xml x?>z",
+  "rich": "z",
+  "plain": "z"
+ },
+ {
+  "input": "&lt;script&gt;",
+  "rich": "&lt;script&gt;",
+  "plain": "<script>"
+ },
+ {
+  "input": "&notit; &notin; &amp &ampx &copy2 &#65; &#x41; &#0; &#128; &#xD800; &#99999999999;",
+  "rich": "¬it; ∉ &amp; &amp;x ©2 A A � € � �",
+  "plain": "¬it; ∉ & &x ©2 A A � € � �"
+ },
+ {
+  "input": "<a href=\"?a=1&amp=2&copy=3&notit\">e</a>",
+  "rich": "<a href=\"?a=1&amp;amp=2&amp;copy=3&amp;notit\" rel=\"noopener noreferrer nofollow\">e</a>",
+  "plain": "e"
+ },
+ {
+  "input": "<a title=\"&amp&lt;x\">t</a>",
+  "rich": "<a title=\"&amp;&lt;x\" rel=\"noopener noreferrer nofollow\">t</a>",
+  "plain": "t"
+ },
+ {
+  "input": "a &# b &#x c &#;",
+  "rich": "a &amp;# b &amp;#x c &amp;#;",
+  "plain": "a &# b &#x c &#;"
+ },
+ {
+  "input": "fin &amp",
+  "rich": "fin &amp;",
+  "plain": "fin &"
+ },
+ {
+  "input": "fin &",
+  "rich": "fin &amp;",
+  "plain": "fin &"
+ },
+ {
+  "input": "fin &#65",
+  "rich": "fin A",
+  "plain": "fin A"
+ },
+ {
+  "input": "x < y > z",
+  "rich": "x &lt; y &gt; z",
+  "plain": "x < y > z"
+ },
+ {
+  "input": "a</b c",
+  "rich": "ac",
+  "plain": "ac"
+ },
+ {
+  "input": "</b ",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "abc<",
+  "rich": "abc&lt;",
+  "plain": "abc<"
+ },
+ {
+  "input": "<p",
+  "rich": "p",
+  "plain": "p"
+ },
+ {
+  "input": "<p class=\"c\" style=\"color:red\">s</p>",
+  "rich": "<p>s</p>",
+  "plain": "s"
+ },
+ {
+  "input": "<iframe><p>dans</p></iframe>après",
+  "rich": "<p>dans</p>après",
+  "plain": "dans\naprès"
+ },
+ {
+  "input": "<iframe>sans fin <b>x",
+  "rich": "sans fin x",
+  "plain": "sans fin x"
+ },
+ {
+  "input": "<svg><style>x</style><p>y</p></svg>",
+  "rich": "<p>y</p>",
+  "plain": "y"
+ },
+ {
+  "input": "<math><mi>x</mi></math>",
+  "rich": "x",
+  "plain": "x"
+ },
+ {
+  "input": "<image src=x>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<form><form>f</form>",
+  "rich": "f",
+  "plain": "f"
+ },
+ {
+  "input": "<table><tr><td>a<td>b</table>",
+  "rich": "ab",
+  "plain": "ab"
+ },
+ {
+  "input": "<select><option>o1<option>o2</select>z",
+  "rich": "z",
+  "plain": "z"
+ },
+ {
+  "input": "<xmp><b>x</b></xmp>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title>a &amp; b</title>",
+  "rich": "a &amp; b",
+  "plain": "a & b"
+ },
+ {
+  "input": "<plaintext><b>tout</b>",
+  "rich": "&lt;b&gt;tout&lt;/b&gt;",
+  "plain": "<b>tout</b>"
+ },
+ {
+  "input": "<noscript><p>n</p></noscript>",
+  "rich": "<p>n</p>",
+  "plain": "n"
+ },
+ {
+  "input": "<p>é à ü — “guillemets” 😀</p>",
+  "rich": "<p>é à ü — “guillemets” 😀</p>",
+  "plain": "é à ü — “guillemets” 😀"
+ },
+ {
+  "input": "<p> </p>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<blockquote>c</blockquote>\n\n\n\n<p>d</p>",
+  "rich": "<blockquote>c</blockquote>\n\n\n\n<p>d</p>",
+  "plain": "c\n\nd"
+ },
+ {
+  "input": "<em><strong>x</em></strong>",
+  "rich": "<em><strong>x</strong></em>",
+  "plain": "x"
+ },
+ {
+  "input": "<s>barré</s><u>souligné</u>",
+  "rich": "<s>barré</s><u>souligné</u>",
+  "plain": "barrésouligné"
+ },
+ {
+  "input": "<ol><li><p>a</p></li></ol>",
+  "rich": "<ol><li><p>a</p></li></ol>",
+  "plain": "a"
+ },
+ {
+  "input": "<a href=\"https://x.fr\"><a href=\"https://y.fr\">n</a></a>",
+  "rich": "<a href=\"https://x.fr\" rel=\"noopener noreferrer nofollow\"></a><a href=\"https://y.fr\" rel=\"noopener noreferrer nofollow\">n</a>",
+  "plain": "n"
+ },
+ {
+  "input": "<div><p>d</p></div>",
+  "rich": "<p>d</p>",
+  "plain": "d"
+ },
+ {
+  "input": "<span>s</span>",
+  "rich": "s",
+  "plain": "s"
+ },
+ {
+  "input": "<P CLASS=X>m</p>",
+  "rich": "<p>m</p>",
+  "plain": "m"
+ },
+ {
+  "input": "<p>a</P >",
+  "rich": "<p>a</p>",
+  "plain": "a"
+ },
+ {
+  "input": "<a href=https://x.fr>sans guillemets</a>",
+  "rich": "<a href=\"https://x.fr\" rel=\"noopener noreferrer nofollow\">sans guillemets</a>",
+  "plain": "sans guillemets"
+ },
+ {
+  "input": "<a href=\"https://x.fr/?q=<b>\">lt</a>",
+  "rich": "<a href=\"https://x.fr/?q=&lt;b&gt;\" rel=\"noopener noreferrer nofollow\">lt</a>",
+  "plain": "lt"
+ },
+ {
+  "input": "<scr<script>ipt>x",
+  "rich": "ipt&gt;x",
+  "plain": "ipt>x"
+ },
+ {
+  "input": "<<p>>",
+  "rich": "&lt;<p>&gt;</p>",
+  "plain": "<>"
+ },
+ {
+  "input": "<p>1 &lt; 2 &gt; 0</p>",
+  "rich": "<p>1 &lt; 2 &gt; 0</p>",
+  "plain": "1 < 2 > 0"
+ },
+ {
+  "input": "<p>&apos;&quot;</p>",
+  "rich": "<p>'\"</p>",
+  "plain": "'\""
+ },
+ {
+  "input": "<a href=\"JAVASCRIPT:x\">u</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">u</a>",
+  "plain": "u"
+ },
+ {
+  "input": "<a href=\"http:x\">h</a>",
+  "rich": "<a href=\"http:x\" rel=\"noopener noreferrer nofollow\">h</a>",
+  "plain": "h"
+ },
+ {
+  "input": "<a href=\"\\\\evil\">bs</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">bs</a>",
+  "plain": "bs"
+ },
+ {
+  "input": "<a href=\"data:text/html,x\">d</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">d</a>",
+  "plain": "d"
+ },
+ {
+  "input": "<a href=\"#ancre\">a</a>",
+  "rich": "<a href=\"#ancre\" rel=\"noopener noreferrer nofollow\">a</a>",
+  "plain": "a"
+ },
+ {
+  "input": "<a href=\"java<!-- -->script:x\">c</a>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">c</a>",
+  "plain": "c"
+ },
+ {
+  "input": "<p>ligne<br>deux</p><li>x</li><h2>t</h2><pre>p</pre>",
+  "rich": "<p>ligne<br />deux</p><li>x</li><h2>t</h2><pre>p</pre>",
+  "plain": "ligne\ndeux\nx\nt\np"
+ },
+ {
+  "input": "x</P>y",
+  "rich": "x<p></p>y",
+  "plain": "x\ny"
+ },
+ {
+  "input": "<BR>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<br\t/>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<p>a</p>\n\n\n\n\n<p>b</p>",
+  "rich": "<p>a</p>\n\n\n\n\n<p>b</p>",
+  "plain": "a\n\nb"
+ },
+ {
+  "input": "<option>o</option>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<p>&#58;&#61;</p>",
+  "rich": "<p>:=</p>",
+  "plain": ":="
+ },
+ {
+  "input": "<&amp&amp<b><style><title><style><b><b><style><b><title>",
+  "rich": "&lt;&amp;&amp;",
+  "plain": "<&&"
+ },
+ {
+  "input": "&amp&amp<title><&amp<style>&amp&amp<b><title><b><title>&amp",
+  "rich": "&amp;&amp;&lt;&amp;amp&lt;style&gt;&amp;&amp;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;title&gt;&amp;",
+  "plain": "&&<&amp<style>&&<b><title><b><title>&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>&amp<b><style><style><title><&copy&amp<<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><b><title><&amp<style><b>&amp<<li><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<b><",
+  "rich": "&lt;&lt;",
+  "plain": "<<"
+ },
+ {
+  "input": "<b><b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<b><title><title>😀",
+  "rich": "&lt;&lt;title&gt;😀",
+  "plain": "<<title>😀"
+ },
+ {
+  "input": "<title><title><style>&amp<<<<title><li>",
+  "rich": "&lt;title&gt;&lt;style&gt;&amp;&lt;&lt;&lt;&lt;title&gt;&lt;li&gt;",
+  "plain": "<title><style>&<<<<title><li>"
+ },
+ {
+  "input": "<&amp<title><b><&amp<style><style><style>&amp<a ",
+  "rich": "&lt;&amp;&lt;b&gt;&lt;&amp;amp&lt;style&gt;&lt;style&gt;&lt;style&gt;&amp;&lt;a",
+  "plain": "<&<b><&amp<style><style><style>&<a"
+ },
+ {
+  "input": "&amp<style><b><style><style><<title>&amp<style>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<<style><style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b><title><title><b>&amp",
+  "rich": "&lt;title&gt;&lt;b&gt;&amp;",
+  "plain": "<title><b>&"
+ },
+ {
+  "input": "<title>&amp<style><b><style>&amp<<style><",
+  "rich": "&amp;&lt;style&gt;&lt;b&gt;&lt;style&gt;&amp;&lt;&lt;style&gt;&lt;",
+  "plain": "&<style><b><style>&<<style><"
+ },
+ {
+  "input": "<br/><b>&amp<style><title>&amp<title>",
+  "rich": "<br />&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title><title><title><&amp<style><title><style>&amp",
+  "rich": "&lt;title&gt;&lt;title&gt;&lt;&amp;amp&lt;style&gt;&lt;title&gt;&lt;style&gt;&amp;",
+  "plain": "<title><title><&amp<style><title><style>&"
+ },
+ {
+  "input": "<style><<<style><b>&amp<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><title><b>&amp<title><b>&amp<<<b>&amp",
+  "rich": "&lt;title&gt;&lt;b&gt;&amp;&lt;title&gt;&lt;b&gt;&amp;&lt;&lt;&lt;b&gt;&amp;",
+  "plain": "<title><b>&<title><b>&<<<b>&"
+ },
+ {
+  "input": "<b><😀<<",
+  "rich": "&lt;😀&lt;&lt;",
+  "plain": "<😀<<"
+ },
+ {
+  "input": "<<style>&amp<style><<b><",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<style><style><style><b><title><style><&amp<style><b><title><b>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "&amp&amp&amp<b><title><b>&amp&amp&amp",
+  "rich": "&amp;&amp;&amp;&lt;b&gt;&amp;&amp;&amp;",
+  "plain": "&&&<b>&&&"
+ },
+ {
+  "input": "<title><style><br/><b><style><style><title>",
+  "rich": "&lt;style&gt;&lt;br/&gt;&lt;b&gt;&lt;style&gt;&lt;style&gt;&lt;title&gt;",
+  "plain": "<style><br/>\n<b><style><style><title>"
+ },
+ {
+  "input": "<li><<",
+  "rich": "<li>&lt;&lt;</li>",
+  "plain": "<<"
+ },
+ {
+  "input": "<title>&amp&amp<title><ul><title><b>&amp&amp",
+  "rich": "&amp;&amp;&lt;title&gt;&lt;ul&gt;&lt;title&gt;&lt;b&gt;&amp;&amp;",
+  "plain": "&&<title><ul><title><b>&&"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style>&amp<br/><style><title><<b><<title><b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><b><style>&amp&amp<title><title><b><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<style><style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style><title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><<style><style><<b>&amp",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><title><style>&amp<style><style><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><<<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style><b>&amp&amp<b><b><<style><b><b>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<<<title>&amp<b><style>&amp<title><title><b><b>",
+  "rich": "&lt;&lt;&amp;&lt;b&gt;&lt;style&gt;&amp;&lt;title&gt;&lt;title&gt;&lt;b&gt;&lt;b&gt;",
+  "plain": "<<&<b><style>&<title><title><b><b>"
+ },
+ {
+  "input": "<title><style><title><style><&amp<title><title><style>",
+  "rich": "&lt;style&gt;&lt;title&gt;&lt;style&gt;&lt;&amp;amp&lt;title&gt;&lt;title&gt;&lt;style&gt;",
+  "plain": "<style><title><style><&amp<title><title><style>"
+ },
+ {
+  "input": "😀<style><<title>&amp<title><b><style><b><<title><style><style>",
+  "rich": "😀",
+  "plain": "😀"
+ },
+ {
+  "input": "&amp<b><title><style><b>&amp&amp",
+  "rich": "&amp;&lt;style&gt;&lt;b&gt;&amp;&amp;",
+  "plain": "&<style><b>&&"
+ },
+ {
+  "input": "<style><<b><title><style>&amp<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style><<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<style><<b><b><title><title><<title><style><style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title><<&amp<title><&amp<title>&amp&amp<title>",
+  "rich": "&lt;&lt;&amp;amp&lt;title&gt;&lt;&amp;amp&lt;title&gt;&amp;&amp;&lt;title&gt;",
+  "plain": "<<&amp<title><&amp<title>&&<title>"
+ },
+ {
+  "input": "<title>&amp<style><style><b><&amp",
+  "rich": "&amp;&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;&amp;amp",
+  "plain": "&<style><style><b><&amp"
+ },
+ {
+  "input": "<title>&amp<<<b><<b>&amp<title>&amp<a <title>&amp",
+  "rich": "&amp;&lt;&lt;&lt;b&gt;&lt;&lt;b&gt;&amp;&lt;title&gt;&amp;&lt;a &lt;title&gt;&amp;",
+  "plain": "&<<<b><<b>&<title>&<a <title>&"
+ },
+ {
+  "input": "<&amp<b><style><&notit;<b>&amp<title>&amp&amp<title><title>",
+  "rich": "&lt;&amp;",
+  "plain": "<&"
+ },
+ {
+  "input": "<style>&amp<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><<title><style><b><style><b><style><b><title><b>",
+  "rich": "&lt;&lt;title&gt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;b&gt;",
+  "plain": "<<title><style><b><style><b><style><b><title><b>"
+ },
+ {
+  "input": "<<title><title>&amp<title><title><title>",
+  "rich": "&lt;&lt;title&gt;&amp;&lt;title&gt;&lt;title&gt;&lt;title&gt;",
+  "plain": "<<title>&<title><title><title>"
+ },
+ {
+  "input": "<title><<b><b><<<style><b><b>",
+  "rich": "&lt;&lt;b&gt;&lt;b&gt;&lt;&lt;&lt;style&gt;&lt;b&gt;&lt;b&gt;",
+  "plain": "<<b><b><<<style><b><b>"
+ },
+ {
+  "input": "<title><<title><<b>",
+  "rich": "&lt;&lt;title&gt;&lt;&lt;b&gt;",
+  "plain": "<<title><<b>"
+ },
+ {
+  "input": "<title><b><",
+  "rich": "&lt;b&gt;&lt;",
+  "plain": "<b><"
+ },
+ {
+  "input": "&amp<title><<<b>",
+  "rich": "&amp;&lt;&lt;&lt;b&gt;",
+  "plain": "&<<<b>"
+ },
+ {
+  "input": "<b><<style><title><style><b><style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<on&amp<style><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<title><b><style><style>",
+  "rich": "&amp;&lt;b&gt;&lt;style&gt;&lt;style&gt;",
+  "plain": "&<b><style><style>"
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>&amp<style><title><title>&amp<title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<&amp<a <b>&amp",
+  "rich": "&lt;&amp;<a rel=\"noopener noreferrer nofollow\">&amp;</a>",
+  "plain": "<&&"
+ },
+ {
+  "input": "<style><style><style><b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<&amp<style><title><title><b>&amp😀&amp<b>",
+  "rich": "&amp;&lt;&amp;",
+  "plain": "&<&"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title><&amp<b><style><title>&amp<<b><style>&amp",
+  "rich": "&lt;&amp;amp&lt;b&gt;&lt;style&gt;&lt;title&gt;&amp;&lt;&lt;b&gt;&lt;style&gt;&amp;",
+  "plain": "<&amp<b><style><title>&<<b><style>&"
+ },
+ {
+  "input": "&amp&amp<b><style><title><title><title><style><style><a <title>",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "<title>&amp<b><<style><title>&amp<<title><<style>",
+  "rich": "&amp;&lt;b&gt;&lt;&lt;style&gt;&lt;title&gt;&amp;&lt;&lt;title&gt;&lt;&lt;style&gt;",
+  "plain": "&<b><<style><title>&<<title><<style>"
+ },
+ {
+  "input": "<b><title>&amp<b><title><style><b><style><title>&amp<title><style><style>",
+  "rich": "&amp;&lt;b&gt;&lt;title&gt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&amp;&lt;title&gt;&lt;style&gt;&lt;style&gt;",
+  "plain": "&<b><title><style><b><style><title>&<title><style><style>"
+ },
+ {
+  "input": "&amp<style>&amp<style><style><<b><b><style><b><<<title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<style><style><<<title>&amp<b>😀<b><title><b>&amp<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><title>&amp<<style><b><title><title><b><style><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><<style><title><b><style><style><b><<title><style><title><b>",
+  "rich": "&lt;&lt;style&gt;&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;&lt;title&gt;&lt;style&gt;&lt;title&gt;&lt;b&gt;",
+  "plain": "<<style><title><b><style><style><b><<title><style><title><b>"
+ },
+ {
+  "input": "<b><b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><<&amp<<<style><<style><title>&amp<&amp",
+  "rich": "&lt;&lt;&amp;&lt;&lt;",
+  "plain": "<<&<<"
+ },
+ {
+  "input": "&amp<&amp<<style>",
+  "rich": "&amp;&lt;&amp;&lt;",
+  "plain": "&<&<"
+ },
+ {
+  "input": "<<style>&amp<&amp<title>&amp<<b><title><title>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title><title><<<",
+  "rich": "&lt;title&gt;&lt;&lt;&lt;",
+  "plain": "<title><<<"
+ },
+ {
+  "input": "<title><title><title><<<title><<style><li>",
+  "rich": "&lt;title&gt;&lt;title&gt;&lt;&lt;&lt;title&gt;&lt;&lt;style&gt;&lt;li&gt;",
+  "plain": "<title><title><<<title><<style><li>"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title><b><title>",
+  "rich": "&lt;b&gt;&lt;title&gt;",
+  "plain": "<b><title>"
+ },
+ {
+  "input": "<title><style>&amp",
+  "rich": "&lt;style&gt;&amp;",
+  "plain": "<style>&"
+ },
+ {
+  "input": "<style><b><&amp<<b><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<b><b><style><style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title>&amp<b><style><title>",
+  "rich": "&amp;&lt;b&gt;&lt;style&gt;&lt;title&gt;",
+  "plain": "&<b><style><title>"
+ },
+ {
+  "input": "<title><style>&amp<title><style><title><title>",
+  "rich": "&lt;style&gt;&amp;&lt;title&gt;&lt;style&gt;&lt;title&gt;&lt;title&gt;",
+  "plain": "<style>&<title><style><title><title>"
+ },
+ {
+  "input": "<b>&amp<style><<b><b><b>😀&amp&copy&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><style><style>&amp<style>&amp&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><<b><li><<b><title><title><style>",
+  "rich": "&lt;&lt;b&gt;&lt;li&gt;&lt;&lt;b&gt;&lt;title&gt;&lt;title&gt;&lt;style&gt;",
+  "plain": "<<b><li><<b><title><title><style>"
+ },
+ {
+  "input": "<style><b>&amp&amp<b><b><<style><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp&amp<<<b>",
+  "rich": "&amp;&amp;&lt;&lt;",
+  "plain": "&&<<"
+ },
+ {
+  "input": "<b><<style>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<style><title><style><<b><title><style>&amp",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "&amp<title><b><title><b><title><<<style><br/>&amp<<",
+  "rich": "&amp;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;title&gt;&lt;&lt;&lt;style&gt;&lt;br/&gt;&amp;&lt;&lt;",
+  "plain": "&<b><title><b><title><<<style><br/>\n&<<"
+ },
+ {
+  "input": "&amp<<<😀<&amp",
+  "rich": "&amp;&lt;&lt;&lt;😀&lt;&amp;",
+  "plain": "&<<<😀<&"
+ },
+ {
+  "input": "<title><title><title>&amp&amp<style><title>",
+  "rich": "&lt;title&gt;&lt;title&gt;&amp;&amp;&lt;style&gt;&lt;title&gt;",
+  "plain": "<title><title>&&<style><title>"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><style><<style>&amp&amp<title><b><b>",
+  "rich": "&lt;style&gt;&lt;&lt;style&gt;&amp;&amp;&lt;title&gt;&lt;b&gt;&lt;b&gt;",
+  "plain": "<style><<style>&&<title><b><b>"
+ },
+ {
+  "input": "&amp&amp<b><li><style><b><&amp&amp&amp<style>",
+  "rich": "&amp;&amp;<li></li>",
+  "plain": "&&"
+ },
+ {
+  "input": "&amp<b><<b><title>&amp<title><title><b><style><title>",
+  "rich": "&amp;&lt;&amp;&lt;title&gt;&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;",
+  "plain": "&<&<title><title><b><style><title>"
+ },
+ {
+  "input": "&amp<<b><&amp<<",
+  "rich": "&amp;&lt;&lt;&amp;&lt;&lt;",
+  "plain": "&<<&<<"
+ },
+ {
+  "input": "<title>&amp&amp<style><style><style>&amp<<b>",
+  "rich": "&amp;&amp;&lt;style&gt;&lt;style&gt;&lt;style&gt;&amp;&lt;&lt;b&gt;",
+  "plain": "&&<style><style><style>&<<b>"
+ },
+ {
+  "input": "<title><<title><style><b><b><<a <style>",
+  "rich": "&lt;&lt;title&gt;&lt;style&gt;&lt;b&gt;&lt;b&gt;&lt;&lt;a &lt;style&gt;",
+  "plain": "<<title><style><b><b><<a <style>"
+ },
+ {
+  "input": "<title>&notit;<&amp<",
+  "rich": "¬it;&lt;&amp;amp&lt;",
+  "plain": "¬it;<&amp<"
+ },
+ {
+  "input": "<<b><<title><",
+  "rich": "&lt;&lt;&lt;",
+  "plain": "<<<"
+ },
+ {
+  "input": "<b><b><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><title><style><<b><&amp<style><b><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><title><style>&amp<<<b><style><style><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<&amp<<b><b><<<<b><<",
+  "rich": "&lt;&amp;&lt;&lt;&lt;&lt;&lt;&lt;",
+  "plain": "<&<<<<<<"
+ },
+ {
+  "input": "<title><<title><<title><<<<style>",
+  "rich": "&lt;&lt;title&gt;&lt;&lt;title&gt;&lt;&lt;&lt;&lt;style&gt;",
+  "plain": "<<title><<title><<<<style>"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<<b>&amp<title><<style><b><",
+  "rich": "&lt;&lt;&amp;&lt;&lt;style&gt;&lt;b&gt;&lt;",
+  "plain": "<<&<<style><b><"
+ },
+ {
+  "input": "<title><<style><style>&amp<title><style>&amp<b><title><style>",
+  "rich": "&lt;&lt;style&gt;&lt;style&gt;&amp;&lt;title&gt;&lt;style&gt;&amp;&lt;b&gt;&lt;title&gt;&lt;style&gt;",
+  "plain": "<<style><style>&<title><style>&<b><title><style>"
+ },
+ {
+  "input": "<&amp&amp<style><b><b><title><style><<title>&amp&amp<",
+  "rich": "&lt;&amp;&amp;",
+  "plain": "<&&"
+ },
+ {
+  "input": "<b>&amp<b><style><title><b>&amp<b><",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<style>&amp<style><<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><style><title><style><b>",
+  "rich": "&lt;style&gt;&lt;title&gt;&lt;style&gt;&lt;b&gt;",
+  "plain": "<style><title><style><b>"
+ },
+ {
+  "input": "<style><&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><title><<style><style><b><title><<style><title>",
+  "rich": "&lt;&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;&lt;style&gt;&lt;title&gt;",
+  "plain": "<<style><style><b><title><<style><title>"
+ },
+ {
+  "input": "&amp<title><b><style>&amp<title><b><b><style>",
+  "rich": "&amp;&lt;b&gt;&lt;style&gt;&amp;&lt;title&gt;&lt;b&gt;&lt;b&gt;&lt;style&gt;",
+  "plain": "&<b><style>&<title><b><b><style>"
+ },
+ {
+  "input": "<<title><<<title><title>&amp&amp<title>&amp<title>",
+  "rich": "&lt;&lt;&lt;&lt;title&gt;&lt;title&gt;&amp;&amp;&lt;title&gt;&amp;&lt;title&gt;",
+  "plain": "<<<<title><title>&&<title>&<title>"
+ },
+ {
+  "input": "<style><style>&amp<style><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>&amp<&amp&amp<title><style><style><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title>&amp<title>",
+  "rich": "&amp;&lt;title&gt;",
+  "plain": "&<title>"
+ },
+ {
+  "input": "<b><<title>&amp<title>",
+  "rich": "&lt;&amp;&lt;title&gt;",
+  "plain": "<&<title>"
+ },
+ {
+  "input": "<title><b><title><style><<style><style>",
+  "rich": "&lt;b&gt;&lt;title&gt;&lt;style&gt;&lt;&lt;style&gt;&lt;style&gt;",
+  "plain": "<b><title><style><<style><style>"
+ },
+ {
+  "input": "<title><title>😀<b><style><title>&amp<title><b><title><b><title><",
+  "rich": "&lt;title&gt;😀&lt;b&gt;&lt;style&gt;&lt;title&gt;&amp;&lt;title&gt;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;title&gt;&lt;",
+  "plain": "<title>😀<b><style><title>&<title><b><title><b><title><"
+ },
+ {
+  "input": "&amp<<style><style><&amp<",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<title><title><title>&amp&amp<br/><b>&amp<style><title><<<b>",
+  "rich": "&lt;title&gt;&lt;title&gt;&amp;&amp;&lt;br/&gt;&lt;b&gt;&amp;&lt;style&gt;&lt;title&gt;&lt;&lt;&lt;b&gt;",
+  "plain": "<title><title>&&<br/>\n<b>&<style><title><<<b>"
+ },
+ {
+  "input": "&notit;&amp&amp",
+  "rich": "¬it;&amp;&amp;",
+  "plain": "¬it;&&"
+ },
+ {
+  "input": "<<style><style><b>&amp<style><title><style><title><<style><style><",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style><title><title><<&amp<",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><b><title>&amp&amp&amp<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<&notit;<title><<title>&amp&amp<title><style>&amp<title><b>",
+  "rich": "&amp;&lt;¬it;&lt;&lt;title&gt;&amp;&amp;&lt;title&gt;&lt;style&gt;&amp;&lt;title&gt;&lt;b&gt;",
+  "plain": "&<¬it;<<title>&&<title><style>&<title><b>"
+ },
+ {
+  "input": "<<b><title><title><style>&amp<style>",
+  "rich": "&lt;&lt;title&gt;&lt;style&gt;&amp;&lt;style&gt;",
+  "plain": "<<title><style>&<style>"
+ },
+ {
+  "input": "&amp<<style><b><",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<&amp<b>",
+  "rich": "&lt;&amp;",
+  "plain": "<&"
+ },
+ {
+  "input": "<title><style><style><b><b>",
+  "rich": "&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;b&gt;",
+  "plain": "<style><style><b><b>"
+ },
+ {
+  "input": "<<b><b><<title><&amp😀<style><<style>",
+  "rich": "&lt;&lt;&lt;&amp;amp😀&lt;style&gt;&lt;&lt;style&gt;",
+  "plain": "<<<&amp😀<style><<style>"
+ },
+ {
+  "input": "&amp<b><title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title>&copy<title><title><title><b><b><style>&amp<b><<b><",
+  "rich": "©&lt;title&gt;&lt;title&gt;&lt;title&gt;&lt;b&gt;&lt;b&gt;&lt;style&gt;&amp;&lt;b&gt;&lt;&lt;b&gt;&lt;",
+  "plain": "©<title><title><title><b><b><style>&<b><<b><"
+ },
+ {
+  "input": "<b><b><<b><<title><style><b><",
+  "rich": "&lt;&lt;&lt;style&gt;&lt;b&gt;&lt;",
+  "plain": "<<<style><b><"
+ },
+ {
+  "input": "<<style>&amp<title><title><<<title><br/>&amp<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b>&amp<b><li><",
+  "rich": "&amp;<li>&lt;</li>",
+  "plain": "&<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<title>&amp",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "<style><style><style><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<a <b><<<",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">&lt;&lt;&lt;</a>",
+  "plain": "<<<"
+ },
+ {
+  "input": "<<<b>&amp<b><style><title>",
+  "rich": "&lt;&lt;&amp;",
+  "plain": "<<&"
+ },
+ {
+  "input": "<b><b><style><style><title><title><b><title><title><title><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<title><title><style><style><title>&amp<title><title><style>&amp<&amp",
+  "rich": "&amp;&lt;title&gt;&lt;style&gt;&lt;style&gt;&lt;title&gt;&amp;&lt;title&gt;&lt;title&gt;&lt;style&gt;&amp;&lt;&amp;amp",
+  "plain": "&<title><style><style><title>&<title><title><style>&<&amp"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<style>&amp<b><b>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<&amp<style>",
+  "rich": "&lt;&amp;",
+  "plain": "<&"
+ },
+ {
+  "input": "<title><style><b>",
+  "rich": "&lt;style&gt;&lt;b&gt;",
+  "plain": "<style><b>"
+ },
+ {
+  "input": "<style><<b>&amp<style><b>&amp<b><style><style><<title><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><<b><b>&amp&amp&amp<b><style>&amp<title>",
+  "rich": "&lt;&lt;b&gt;&lt;b&gt;&amp;&amp;&amp;&lt;b&gt;&lt;style&gt;&amp;&lt;title&gt;",
+  "plain": "<<b><b>&&&<b><style>&<title>"
+ },
+ {
+  "input": "<title><&amp<style><title><<<&amp&amp&amp<<style>",
+  "rich": "&lt;&amp;amp&lt;style&gt;&lt;title&gt;&lt;&lt;&lt;&amp;amp&amp;&amp;&lt;&lt;style&gt;",
+  "plain": "<&amp<style><title><<<&amp&&<<style>"
+ },
+ {
+  "input": "<b><b>&notit;<b><style><title><",
+  "rich": "¬it;",
+  "plain": "¬it;"
+ },
+ {
+  "input": "<b><style>&amp<style><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp&amp<title><title>😀",
+  "rich": "&amp;&amp;&lt;title&gt;😀",
+  "plain": "&&<title>😀"
+ },
+ {
+  "input": "&amp<title><<b><b><b><style>",
+  "rich": "&amp;&lt;&lt;b&gt;&lt;b&gt;&lt;b&gt;&lt;style&gt;",
+  "plain": "&<<b><b><b><style>"
+ },
+ {
+  "input": "&amp<<style>&amp<title><&amp&amp<<style>&amp<style><b>",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<style><b><style><<style><<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&notit;&amp<title><b><title><b><style><b><title><b><<style>&amp",
+  "rich": "¬it;&amp;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;&lt;style&gt;&amp;",
+  "plain": "¬it;&<b><title><b><style><b><title><b><<style>&"
+ },
+ {
+  "input": "<&notit;<title>",
+  "rich": "&lt;¬it;",
+  "plain": "<¬it;"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<title><",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<style><style><style><style><<<style><style><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<style><style><title><br/>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<b><title><title><title>&amp<title>",
+  "rich": "&lt;&lt;title&gt;&lt;title&gt;&amp;&lt;title&gt;",
+  "plain": "<<title><title>&<title>"
+ },
+ {
+  "input": "<style>&amp&amp<style><<<title><<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<title><style>",
+  "rich": "&lt;&lt;style&gt;",
+  "plain": "<<style>"
+ },
+ {
+  "input": "<title>&amp&amp<style><b><title>&amp&amp<<style><b>",
+  "rich": "&amp;&amp;&lt;style&gt;&lt;b&gt;&lt;title&gt;&amp;&amp;&lt;&lt;style&gt;&lt;b&gt;",
+  "plain": "&&<style><b><title>&&<<style><b>"
+ },
+ {
+  "input": "<b><b><b><style><<style><title><<li>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<b><&amp<<<title><<<<style><&amp",
+  "rich": "&amp;&lt;&amp;&lt;&lt;&lt;&lt;&lt;&lt;style&gt;&lt;&amp;amp",
+  "plain": "&<&<<<<<<style><&amp"
+ },
+ {
+  "input": "&amp<<style><title><br/>",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<style><<<title>&amp&amp<<b><<b>&amp<<",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><title><title><style><&amp<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>&amp<style><<<title><title><<<style>&amp<title>&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><<style><b><<style>&amp<title><",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style>&amp<title><b>&amp<b><<b><title><&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><style><style><title><<style><b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><br/><<b><<<",
+  "rich": "&lt;br/&gt;&lt;&lt;b&gt;&lt;&lt;&lt;",
+  "plain": "<br/>\n<<b><<<"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<title><<b><title>&amp&amp<style><<<",
+  "rich": "&lt;&lt;&lt;b&gt;&lt;title&gt;&amp;&amp;&lt;style&gt;&lt;&lt;&lt;",
+  "plain": "<<<b><title>&&<style><<<"
+ },
+ {
+  "input": "&amp<style><title><<<b>&amp<title><b><style>&amp<title><title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><&amp<style><<<title><style><style><b><title><style><title>",
+  "rich": "&lt;&amp;amp&lt;style&gt;&lt;&lt;&lt;title&gt;&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;style&gt;&lt;title&gt;",
+  "plain": "<&amp<style><<<title><style><style><b><title><style><title>"
+ },
+ {
+  "input": "<<&amp",
+  "rich": "&lt;&lt;&amp;",
+  "plain": "<<&"
+ },
+ {
+  "input": "<title>&amp<b><title>&amp",
+  "rich": "&amp;&lt;b&gt;&lt;title&gt;&amp;",
+  "plain": "&<b><title>&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>on<b><title><br/><<style>&amp<title><b><b>&amp&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><b><<b>&amp<<b>&amp<title><title><style>",
+  "rich": "&lt;&amp;&lt;&amp;&lt;title&gt;&lt;style&gt;",
+  "plain": "<&<&<title><style>"
+ },
+ {
+  "input": "<<style><title><title><title>&amp<b>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<title><<<style><style><<title><b><style><b><<",
+  "rich": "&lt;&lt;&lt;&lt;style&gt;&lt;style&gt;&lt;&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;&lt;",
+  "plain": "<<<<style><style><<title><b><style><b><<"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><b><b><<title><<style>",
+  "rich": "&lt;&lt;&lt;style&gt;",
+  "plain": "<<<style>"
+ },
+ {
+  "input": "<title><style><title>",
+  "rich": "&lt;style&gt;&lt;title&gt;",
+  "plain": "<style><title>"
+ },
+ {
+  "input": "<<b><style><title><<b><",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><b>&amp<b><title><b>&amp",
+  "rich": "&lt;b&gt;&amp;&lt;b&gt;&lt;title&gt;&lt;b&gt;&amp;",
+  "plain": "<b>&<b><title><b>&"
+ },
+ {
+  "input": "<b><<",
+  "rich": "&lt;&lt;",
+  "plain": "<<"
+ },
+ {
+  "input": "<<b>&amp&amp&amp<title><title>",
+  "rich": "&lt;&amp;&amp;&amp;&lt;title&gt;",
+  "plain": "<&&&<title>"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><b><b>&amp<&amp<",
+  "rich": "&amp;&lt;&amp;&lt;",
+  "plain": "&<&<"
+ },
+ {
+  "input": "<title><title><&notit;&amp",
+  "rich": "&lt;title&gt;&lt;&amp;notit;&amp;",
+  "plain": "<title><&notit;&"
+ },
+ {
+  "input": "<title><style><b>",
+  "rich": "&lt;style&gt;&lt;b&gt;",
+  "plain": "<style><b>"
+ },
+ {
+  "input": "<title><style><b>",
+  "rich": "&lt;style&gt;&lt;b&gt;",
+  "plain": "<style><b>"
+ },
+ {
+  "input": "<<<title><b>&amp<style>&notit;",
+  "rich": "&lt;&lt;&lt;b&gt;&amp;&lt;style&gt;¬it;",
+  "plain": "<<<b>&<style>¬it;"
+ },
+ {
+  "input": "<b><title><b>",
+  "rich": "&lt;b&gt;",
+  "plain": "<b>"
+ },
+ {
+  "input": "<<style><<title><style><style><title><<b>&amp&amp<&amp",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "&amp<<b><style><",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<b><b><title><style><<style><b><style>&amp<b><style><b>😀",
+  "rich": "&lt;style&gt;&lt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&amp;&lt;b&gt;&lt;style&gt;&lt;b&gt;😀",
+  "plain": "<style><<style><b><style>&<b><style><b>😀"
+ },
+ {
+  "input": "<b><<b>&amp<<<br/>",
+  "rich": "&lt;&amp;&lt;&lt;<br />",
+  "plain": "<&<<"
+ },
+ {
+  "input": "&amp<style><title><b><li><<style><<<<title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><<b>&amp<title>&amp<",
+  "rich": "&lt;&amp;&amp;&lt;",
+  "plain": "<&&<"
+ },
+ {
+  "input": "<style><<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "😀&amp<b><style><title>",
+  "rich": "😀&amp;",
+  "plain": "😀&"
+ },
+ {
+  "input": "&amp<b><&amp<style><<<style><title>&amp<title>",
+  "rich": "&amp;&lt;&amp;",
+  "plain": "&<&"
+ },
+ {
+  "input": "<<b><style><b><<b><b><b><<<style>&amp<b>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<title>😀<b>&amp<b><<<style><b>",
+  "rich": "😀&lt;b&gt;&amp;&lt;b&gt;&lt;&lt;&lt;style&gt;&lt;b&gt;",
+  "plain": "😀<b>&<b><<<style><b>"
+ },
+ {
+  "input": "<style><b>&amp&amp<",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><<<b><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><style>&amp<title><style><title><style><b><style><title><b>",
+  "rich": "&lt;style&gt;&amp;&lt;title&gt;&lt;style&gt;&lt;title&gt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&lt;b&gt;",
+  "plain": "<style>&<title><style><title><style><b><style><title><b>"
+ },
+ {
+  "input": "<style><title><b><style><<b><style><<title><style><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><&amp<style><b><title><title><title><style>&amp<b>&amp<title>",
+  "rich": "&lt;&amp;amp&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;title&gt;&lt;title&gt;&lt;style&gt;&amp;&lt;b&gt;&amp;&lt;title&gt;",
+  "plain": "<&amp<style><b><title><title><title><style>&<b>&<title>"
+ },
+ {
+  "input": "<style>&amp<b>&amp<<<",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><title><<<<title><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style><title><title><style><<style><style><",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><<b><<<title><b><style>&amp<style><<<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<<b><title><<b>&amp<b><title>",
+  "rich": "&amp;&lt;&lt;&lt;b&gt;&amp;&lt;b&gt;&lt;title&gt;",
+  "plain": "&<<<b>&<b><title>"
+ },
+ {
+  "input": "&amp&amp<style><style><style><<title><a &amp<style><style>",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "<style><title><<b><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><<style><style>&amp&amp&amp<<&amp<style><a &amp",
+  "rich": "&lt;&lt;style&gt;&lt;style&gt;&amp;&amp;&amp;&lt;&lt;&amp;amp&lt;style&gt;&lt;a &amp;",
+  "plain": "<<style><style>&&&<<&amp<style><a &"
+ },
+ {
+  "input": "<title><style><b><style><",
+  "rich": "&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;",
+  "plain": "<style><b><style><"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&notit;",
+  "rich": "¬it;",
+  "plain": "¬it;"
+ },
+ {
+  "input": "<b><title><style><<style>&amp<title>",
+  "rich": "&lt;style&gt;&lt;&lt;style&gt;&amp;&lt;title&gt;",
+  "plain": "<style><<style>&<title>"
+ },
+ {
+  "input": "<<title><<title>&amp<style><b><title><",
+  "rich": "&lt;&lt;&lt;title&gt;&amp;&lt;style&gt;&lt;b&gt;&lt;title&gt;&lt;",
+  "plain": "<<<title>&<style><b><title><"
+ },
+ {
+  "input": "&amp<b><style><b><b><b><b><title><b>&amp&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<<title>&amp<b><<style><style><style><style><b><style><title>&amp",
+  "rich": "&lt;&amp;&lt;b&gt;&lt;&lt;style&gt;&lt;style&gt;&lt;style&gt;&lt;style&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&amp;",
+  "plain": "<&<b><<style><style><style><style><b><style><title>&"
+ },
+ {
+  "input": "&amp<title><title><b><<title><title>",
+  "rich": "&amp;&lt;title&gt;&lt;b&gt;&lt;&lt;title&gt;&lt;title&gt;",
+  "plain": "&<title><b><<title><title>"
+ },
+ {
+  "input": "<style>&amp<title><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp&amp<style><b>&amp",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "&amp<b>&notit;<title><b><title>&amp<b><style>",
+  "rich": "&amp;¬it;&lt;b&gt;&lt;title&gt;&amp;&lt;b&gt;&lt;style&gt;",
+  "plain": "&¬it;<b><title>&<b><style>"
+ },
+ {
+  "input": "<b><b>&amp&amp<title>&amp&amp<&amp<<b>",
+  "rich": "&amp;&amp;&amp;&amp;&lt;&amp;amp&lt;&lt;b&gt;",
+  "plain": "&&&&<&amp<<b>"
+ },
+ {
+  "input": "<&amp<style>&amp<title><style><<b><style>",
+  "rich": "&lt;&amp;",
+  "plain": "<&"
+ },
+ {
+  "input": "&amp<b><<<<<<b><title><style><b>&amp<style>",
+  "rich": "&amp;&lt;&lt;&lt;&lt;&lt;&lt;style&gt;&lt;b&gt;&amp;&lt;style&gt;",
+  "plain": "&<<<<<<style><b>&<style>"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style>&amp&amp&notit;<b><style><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<title><li><b><style><title><<<",
+  "rich": "&lt;&lt;li&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&lt;&lt;&lt;",
+  "plain": "<<li><b><style><title><<<"
+ },
+ {
+  "input": "<style><title><title>&notit;<b><b><b><b><style><style><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>&amp<style><title><style><title>&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<b><<b><b><b><<style><b>",
+  "rich": "&lt;&lt;&lt;",
+  "plain": "<<<"
+ },
+ {
+  "input": "<title>&amp<",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<style><&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>&amp<title><title><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><b>&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style></br><&amp<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><title><title><b>&amp<b><style><<<style><b>",
+  "rich": "&lt;title&gt;&lt;title&gt;&lt;b&gt;&amp;&lt;b&gt;&lt;style&gt;&lt;&lt;&lt;style&gt;&lt;b&gt;",
+  "plain": "<title><title><b>&<b><style><<<style><b>"
+ },
+ {
+  "input": "<<b>&amp<title><style>&amp&amp",
+  "rich": "&lt;&amp;&lt;style&gt;&amp;&amp;",
+  "plain": "<&<style>&&"
+ },
+ {
+  "input": "&copy",
+  "rich": "©",
+  "plain": "©"
+ },
+ {
+  "input": "<style>&amp<b><b>&amp<<li>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><title><&amp&amp<li><&amp<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "😀&amp&amp<b><b><title><b><li><b><b>&notit;",
+  "rich": "😀&amp;&amp;&lt;b&gt;&lt;li&gt;&lt;b&gt;&lt;b&gt;¬it;",
+  "plain": "😀&&<b><li><b><b>¬it;"
+ },
+ {
+  "input": "<<<&amp<style><b><b>&notit;&amp<style><b>",
+  "rich": "&lt;&lt;&lt;&amp;",
+  "plain": "<<<&"
+ },
+ {
+  "input": "<title><b><title>",
+  "rich": "&lt;b&gt;&lt;title&gt;",
+  "plain": "<b><title>"
+ },
+ {
+  "input": "<&amp<title>&amp&amp<b><b><style><b><<",
+  "rich": "&lt;&amp;&amp;&amp;&lt;b&gt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;&lt;",
+  "plain": "<&&&<b><b><style><b><<"
+ },
+ {
+  "input": "<&amp<title><style>&amp<style><title><title><",
+  "rich": "&lt;&amp;&lt;style&gt;&amp;&lt;style&gt;&lt;title&gt;&lt;title&gt;&lt;",
+  "plain": "<&<style>&<style><title><title><"
+ },
+ {
+  "input": "<style><&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<style><&amp<b><title>😀",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b><<b><title><title><style><b>",
+  "rich": "&lt;&lt;title&gt;&lt;style&gt;&lt;b&gt;",
+  "plain": "<<title><style><b>"
+ },
+ {
+  "input": "<<&amp<style>&amp<title><style><<title><b><<<b>",
+  "rich": "&lt;&lt;&amp;",
+  "plain": "<<&"
+ },
+ {
+  "input": "<style><style>&amp<style><style><<a <b>&amp<title><&amp<",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><b><&amp<title><<b><title><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<b><title>&amp<<<style>&amp<<title>&amp&amp<style>",
+  "rich": "&lt;&amp;&lt;&lt;&lt;style&gt;&amp;&lt;&lt;title&gt;&amp;&amp;&lt;style&gt;",
+  "plain": "<&<<<style>&<<title>&&<style>"
+ },
+ {
+  "input": "<style>&amp<b><title><b><title>&amp<<title><b>&amp<<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><title><<b><style><b><",
+  "rich": "&lt;title&gt;&lt;&lt;b&gt;&lt;style&gt;&lt;b&gt;&lt;",
+  "plain": "<title><<b><style><b><"
+ },
+ {
+  "input": "<b><<",
+  "rich": "&lt;&lt;",
+  "plain": "<<"
+ },
+ {
+  "input": "<<<style><title><title><<title><&amp<title><title>",
+  "rich": "&lt;&lt;",
+  "plain": "<<"
+ },
+ {
+  "input": "<title><title>&amp<title><title><style><",
+  "rich": "&lt;title&gt;&amp;&lt;title&gt;&lt;title&gt;&lt;style&gt;&lt;",
+  "plain": "<title>&<title><title><style><"
+ },
+ {
+  "input": "&amp<<<<title><style><b>&amp<style><<b>&amp<b>",
+  "rich": "&amp;&lt;&lt;&lt;&lt;style&gt;&lt;b&gt;&amp;&lt;style&gt;&lt;&lt;b&gt;&amp;&lt;b&gt;",
+  "plain": "&<<<<style><b>&<style><<b>&<b>"
+ },
+ {
+  "input": "<b><b>&amp<<",
+  "rich": "&amp;&lt;&lt;",
+  "plain": "&<<"
+ },
+ {
+  "input": "<style><title><b><b><b><title><b><title><b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style><style>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "😀<b><b><style><b><title><<<style><title><<style><style>",
+  "rich": "😀",
+  "plain": "😀"
+ },
+ {
+  "input": "<style><title><b><br/><style><ul><style><style><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><b>&amp<b><style>",
+  "rich": "&lt;b&gt;&amp;&lt;b&gt;&lt;style&gt;",
+  "plain": "<b>&<b><style>"
+ },
+ {
+  "input": "&amp&amp<b>&amp<title><title>&amp",
+  "rich": "&amp;&amp;&amp;&lt;title&gt;&amp;",
+  "plain": "&&&<title>&"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><title><<&amp<style><style>&amp<title>",
+  "rich": "&lt;title&gt;&lt;&lt;&amp;amp&lt;style&gt;&lt;style&gt;&amp;&lt;title&gt;",
+  "plain": "<title><<&amp<style><style>&<title>"
+ },
+ {
+  "input": "<<b><😀&amp",
+  "rich": "&lt;&lt;😀&amp;",
+  "plain": "<<😀&"
+ },
+ {
+  "input": "<style><b><style><title><style><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><b><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><title><b>",
+  "rich": "&lt;b&gt;",
+  "plain": "<b>"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<style><b>&amp<style><b><style><title><<<style><title><<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style>&amp<<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><b><b><title><title><b><style><title><",
+  "rich": "&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&lt;",
+  "plain": "<title><b><style><title><"
+ },
+ {
+  "input": "<style>&amp<style>&amp<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<title><b>&amp<b><<b><title><b>",
+  "rich": "&lt;&lt;b&gt;&amp;&lt;b&gt;&lt;&lt;b&gt;&lt;title&gt;&lt;b&gt;",
+  "plain": "<<b>&<b><<b><title><b>"
+ },
+ {
+  "input": "<style><<style><style>&amp<title><b>&amp<style><title><title>&amp<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp&amp&amp<b><b>",
+  "rich": "&amp;&amp;&amp;",
+  "plain": "&&&"
+ },
+ {
+  "input": "<b><b>&amp<title>&amp<style><b>",
+  "rich": "&amp;&amp;&lt;style&gt;&lt;b&gt;",
+  "plain": "&&<style><b>"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title>&amp<style><title><style><&amp<style><style>&amp<b>",
+  "rich": "&amp;&lt;style&gt;&lt;title&gt;&lt;style&gt;&lt;&amp;amp&lt;style&gt;&lt;style&gt;&amp;&lt;b&gt;",
+  "plain": "&<style><title><style><&amp<style><style>&<b>"
+ },
+ {
+  "input": "<<style><title><<b><style><b><<title>",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style><&amp&amp<style><style><b><<style>&amp<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style><title><b><title><title><a <title><title>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "&amp😀<title>&amp&amp<title>&amp<style><style><<title><style><",
+  "rich": "&amp;😀&amp;&amp;&lt;title&gt;&amp;&lt;style&gt;&lt;style&gt;&lt;&lt;title&gt;&lt;style&gt;&lt;",
+  "plain": "&😀&&<title>&<style><style><<title><style><"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<a <style><style><b><style><title><style><style><style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style><style><title><style><b><style><style>&amp&amp<title>&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<br/><<style>",
+  "rich": "<br />&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<<b>&amp<title><style><<b><style>",
+  "rich": "&lt;&lt;&amp;&lt;style&gt;&lt;&lt;b&gt;&lt;style&gt;",
+  "plain": "<<&<style><<b><style>"
+ },
+ {
+  "input": "<<b><<b><b><b><b><style>&amp<b>&amp",
+  "rich": "&lt;&lt;",
+  "plain": "<<"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<a &amp<<<style>&amp<&amp<b><b><&amp<b>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">&amp;&lt;&amp;&lt;&amp;</a>",
+  "plain": "&<&<&"
+ },
+ {
+  "input": "<b>&amp<<title><b><style><style><title><&amp😀",
+  "rich": "&amp;&lt;&lt;b&gt;&lt;style&gt;&lt;style&gt;&lt;title&gt;&lt;&amp;amp😀",
+  "plain": "&<<b><style><style><title><&amp😀"
+ },
+ {
+  "input": "<b>&notit;<style>",
+  "rich": "¬it;",
+  "plain": "¬it;"
+ },
+ {
+  "input": "<b>&amp<b>&amp<title><<b><style><title><title><<style><",
+  "rich": "&amp;&amp;&lt;&lt;b&gt;&lt;style&gt;&lt;title&gt;&lt;title&gt;&lt;&lt;style&gt;&lt;",
+  "plain": "&&<<b><style><title><title><<style><"
+ },
+ {
+  "input": "&amp&amp<style>",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "<b><title><b><title><b><b><<style>&amp",
+  "rich": "&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;b&gt;&lt;&lt;style&gt;&amp;",
+  "plain": "<b><title><b><b><<style>&"
+ },
+ {
+  "input": "<style>&amp&amp<style><title><title>&amp",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<&amp<title><b><b>",
+  "rich": "&lt;&amp;&lt;b&gt;&lt;b&gt;",
+  "plain": "<&<b><b>"
+ },
+ {
+  "input": "&notit;",
+  "rich": "¬it;",
+  "plain": "¬it;"
+ },
+ {
+  "input": "<<title><&amp<",
+  "rich": "&lt;&lt;&amp;amp&lt;",
+  "plain": "<<&amp<"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<<b><style><title>&amp",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp&amp<b>",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "<b>&amp<title><b>&amp<b><title><title>&amp<a <b>",
+  "rich": "&amp;&lt;b&gt;&amp;&lt;b&gt;&lt;title&gt;&lt;title&gt;&amp;&lt;a &lt;b&gt;",
+  "plain": "&<b>&<b><title><title>&<a <b>"
+ },
+ {
+  "input": "&amp<<title>",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<a <title><<b><b>",
+  "rich": "<a rel=\"noopener noreferrer nofollow\">&lt;</a>",
+  "plain": "<"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<title><a &amp<b>",
+  "rich": "&amp;&lt;a &amp;&lt;b&gt;",
+  "plain": "&<a &<b>"
+ },
+ {
+  "input": "&amp<style>&amp<<title>&amp&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><b><title><title><style>&amp<b>&amp<style><b><",
+  "rich": "&lt;b&gt;&lt;title&gt;&lt;title&gt;&lt;style&gt;&amp;&lt;b&gt;&amp;&lt;style&gt;&lt;b&gt;&lt;",
+  "plain": "<b><title><title><style>&<b>&<style><b><"
+ },
+ {
+  "input": "<title>&amp<title>&amp<style><title><&amp<style>&amp<style>&amp&amp",
+  "rich": "&amp;&lt;title&gt;&amp;&lt;style&gt;&lt;title&gt;&lt;&amp;amp&lt;style&gt;&amp;&lt;style&gt;&amp;&amp;",
+  "plain": "&<title>&<style><title><&amp<style>&<style>&&"
+ },
+ {
+  "input": "&amp<style>&amp<style><<style><&amp</br>",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "&amp<b><<style><b><title><style>&amp<<style>&amp",
+  "rich": "&amp;&lt;",
+  "plain": "&<"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><b><b><<title>&amp&amp<style><style><b>&amp&amp<",
+  "rich": "&lt;b&gt;&lt;b&gt;&lt;&lt;title&gt;&amp;&amp;&lt;style&gt;&lt;style&gt;&lt;b&gt;&amp;&amp;&lt;",
+  "plain": "<b><b><<title>&&<style><style><b>&&<"
+ },
+ {
+  "input": "<&amp<style>",
+  "rich": "&lt;&amp;",
+  "plain": "<&"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<&amp<title><b><title><b><style><",
+  "rich": "&lt;&lt;&amp;&lt;b&gt;&lt;title&gt;&lt;b&gt;&lt;style&gt;&lt;",
+  "plain": "<<&<b><title><b><style><"
+ },
+ {
+  "input": "<",
+  "rich": "&lt;",
+  "plain": "<"
+ },
+ {
+  "input": "<style><<<<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<li><<style><<title>",
+  "rich": "<li>&lt;</li>",
+  "plain": "<"
+ },
+ {
+  "input": "<style><style><style><&amp<b><b><<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><title><<style><style><<style>",
+  "rich": "&lt;title&gt;&lt;&lt;style&gt;&lt;style&gt;&lt;&lt;style&gt;",
+  "plain": "<title><<style><style><<style>"
+ },
+ {
+  "input": "<style><b>&amp<title><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b>&amp<style>&amp<title><title><",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "&amp<b>&amp",
+  "rich": "&amp;&amp;",
+  "plain": "&&"
+ },
+ {
+  "input": "&amp<title><title><style><<title><",
+  "rich": "&amp;&lt;title&gt;&lt;style&gt;&lt;&lt;title&gt;&lt;",
+  "plain": "&<title><style><<title><"
+ },
+ {
+  "input": "<title>&amp<style><style><style><title>&amp",
+  "rich": "&amp;&lt;style&gt;&lt;style&gt;&lt;style&gt;&lt;title&gt;&amp;",
+  "plain": "&<style><style><style><title>&"
+ },
+ {
+  "input": "&amp",
+  "rich": "&amp;",
+  "plain": "&"
+ },
+ {
+  "input": "<b><b><b>&amp<b><b>&notit;",
+  "rich": "&amp;¬it;",
+  "plain": "&¬it;"
+ },
+ {
+  "input": "<style><<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<title><style>&amp&amp<br/><title><style><<title>&amp",
+  "rich": "&lt;&lt;style&gt;&amp;&amp;&lt;br/&gt;&lt;title&gt;&lt;style&gt;&lt;&lt;title&gt;&amp;",
+  "plain": "<<style>&&<br/>\n<title><style><<title>&"
+ },
+ {
+  "input": "<b><a <style>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<<title><<style><li><<b>&amp<&amp<b><style><title>",
+  "rich": "&lt;&lt;&lt;style&gt;&lt;li&gt;&lt;&lt;b&gt;&amp;&lt;&amp;amp&lt;b&gt;&lt;style&gt;&lt;title&gt;",
+  "plain": "<<<style><li><<b>&<&amp<b><style><title>"
+ },
+ {
+  "input": "&amp<<title>&amp<style>&amp&notit;&amp<b>",
+  "rich": "&amp;&lt;&amp;&lt;style&gt;&amp;¬it;&amp;&lt;b&gt;",
+  "plain": "&<&<style>&¬it;&<b>"
+ },
+ {
+  "input": "&amp&amp<&amp&amp<style><<title>&amp<<title>",
+  "rich": "&amp;&amp;&lt;&amp;&amp;",
+  "plain": "&&<&&"
+ },
+ {
+  "input": "<style><title><<ul><title><<style><title><",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<li><b><<title><style>&amp<<b>&amp",
+  "rich": "<li>&lt;&lt;style&gt;&amp;&lt;&lt;b&gt;&amp;</li>",
+  "plain": "<<style>&<<b>&"
+ },
+ {
+  "input": "<style><b><title><title><title>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<title><style><b><title>&amp<b><b>",
+  "rich": "&lt;style&gt;&lt;b&gt;&lt;title&gt;&amp;&lt;b&gt;&lt;b&gt;",
+  "plain": "<style><b><title>&<b><b>"
+ },
+ {
+  "input": "<style><<b>",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "<b><style><style>&amp&copy",
+  "rich": "",
+  "plain": ""
+ },
+ {
+  "input": "&amp<style>&amp<b><b><style><b>&amp<b>&amp&amp<title><b>",
+  "rich": "&amp;",
+  "plain": "&"
+ }
+]

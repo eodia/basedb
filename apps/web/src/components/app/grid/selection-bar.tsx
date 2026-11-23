@@ -1,5 +1,7 @@
 'use client'
 
+import { ChevronDown, Copy, Download, Pencil, Trash2, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,8 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { ExportFormat } from '@/lib/export'
 import { $t, $tp } from '@/lib/i18n'
-import { ChevronDown, Copy, Download, Pencil, Trash2, X } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 /**
  * The bar that appears when rows are selected — chapter 11 §2.5.

@@ -1,12 +1,12 @@
 'use client'
 
-import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
-import { Switch } from '@/components/ui/switch'
-import { type Me, type NotificationKind, api } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
-import { messageFor } from '@/lib/messages'
 import { AtSign, Bell, Mail, MessageSquareReply, UserCheck, Zap } from 'lucide-react'
 import { useState } from 'react'
+import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
+import { Switch } from '@/components/ui/switch'
+import { api, type Me, type NotificationKind } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
 
 /**
  * What notifies — chapter 16 §2.3 and §2.4.

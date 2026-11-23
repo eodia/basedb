@@ -326,57 +326,6 @@
       }
     }
   ],
-  "dashboards": [
-    {
-      "label": "Événements",
-      "blocks": [
-        {
-          "kind": "number",
-          "title": "Événements à venir",
-          "table": "evenements",
-          "aggregate": "count",
-          "filter": "[Statut] ne \"Terminé\""
-        },
-        {
-          "kind": "number",
-          "title": "Inscriptions",
-          "table": "inscriptions",
-          "aggregate": "count"
-        },
-        {
-          "kind": "number",
-          "title": "Participants",
-          "table": "participants",
-          "aggregate": "count"
-        },
-        {
-          "kind": "chart",
-          "title": "Inscriptions par statut",
-          "table": "inscriptions",
-          "group_by": "Statut",
-          "style": "bar",
-          "width": 2
-        },
-        {
-          "kind": "chart",
-          "title": "Sentiment des retours",
-          "table": "inscriptions",
-          "group_by": "Sentiment",
-          "style": "pie"
-        },
-        {
-          "kind": "list",
-          "title": "Prochains événements",
-          "table": "evenements",
-          "fields": ["Nom", "Début", "Places restantes"],
-          "filter": "[Statut] ne \"Terminé\"",
-          "sort": "Début",
-          "limit": 5,
-          "width": 3
-        }
-      ]
-    }
-  ],
   "automations": [
     {
       "label": "Date d'inscription",
